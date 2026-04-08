@@ -1017,13 +1017,23 @@ function buildMobileListView() {
   scrollWrap.appendChild(scrollRow);
   container.appendChild(scrollWrap);
 
-  // 2. Stats bar
+  // 2. Stats bar (reflects domain filter if active)
   const statsBar = document.createElement('div');
   statsBar.className = 'm-stats-bar';
-  const parts = [`${totalProjects.toLocaleString()} projects`];
-  if (totalWinners > 0) parts.push(`${totalWinners} winners`);
-  parts.push(`${totalSemesters} semesters`);
-  statsBar.textContent = parts.join(' · ');
+  if (mobileActiveDomain) {
+    const domProjects = filtered.filter(p => p.domain === mobileActiveDomain);
+    const domWinners = domProjects.filter(p => p.award).length;
+    const domSems = new Set(domProjects.map(p => p.semester)).size;
+    const sp = [`${domProjects.length} project${domProjects.length !== 1 ? 's' : ''}`];
+    if (domWinners > 0) sp.push(`${domWinners} winner${domWinners !== 1 ? 's' : ''}`);
+    sp.push(`${domSems} semester${domSems !== 1 ? 's' : ''}`);
+    statsBar.textContent = sp.join(' · ');
+  } else {
+    const parts = [`${totalProjects.toLocaleString()} project${totalProjects !== 1 ? 's' : ''}`];
+    if (totalWinners > 0) parts.push(`${totalWinners} winner${totalWinners !== 1 ? 's' : ''}`);
+    parts.push(`${totalSemesters} semester${totalSemesters !== 1 ? 's' : ''}`);
+    statsBar.textContent = parts.join(' · ');
+  }
   container.appendChild(statsBar);
 
   // 3. Project list
