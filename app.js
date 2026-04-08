@@ -958,6 +958,7 @@ function switchView(view) {
 // Mobile List View — Premium Redesign
 // ────────────────────────────────────────────────
 let mobileActiveDomain = null; // null = 'All'
+let mobileSortMode = 'newest'; // 'newest' or 'winners'
 
 function buildMobileListView() {
   const container = document.getElementById('mobileListScroll');
@@ -977,6 +978,18 @@ function buildMobileListView() {
   scrollWrap.className = 'm-domain-scroll-wrap';
   const scrollRow = document.createElement('div');
   scrollRow.className = 'm-domain-scroll';
+  scrollRow.id = 'mDomainScrollRow';
+
+  function selectDomain(domain, cardEl) {
+    mobileActiveDomain = domain;
+    // Update active states without full rebuild
+    scrollRow.querySelectorAll('.m-domain-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
+    // Gentle scroll — just center the card
+    cardEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    // Only rebuild the project list + stats, not domain cards
+    updateMobileProjectList(container, filtered, domainCounts, domains);
+  }
 
   // "All" card
   const allCard = document.createElement('div');
@@ -987,10 +1000,7 @@ function buildMobileListView() {
     <div class="m-domain-card-name">All Projects</div>
     <div class="m-domain-card-dot" style="background:#FFC629"></div>
   `;
-  allCard.addEventListener('click', () => {
-    mobileActiveDomain = null;
-    buildMobileListView();
-  });
+  allCard.addEventListener('click', () => selectDomain(null, allCard));
   scrollRow.appendChild(allCard);
 
   // Domain cards
@@ -1005,19 +1015,31 @@ function buildMobileListView() {
       <div class="m-domain-card-name">${escHtml(abbrevDomain(domain))}</div>
       <div class="m-domain-card-dot" style="background:${color}"></div>
     `;
-    card.addEventListener('click', () => {
-      mobileActiveDomain = domain;
-      buildMobileListView();
-      // Scroll the selected card into view
-      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
-    });
+    card.addEventListener('click', () => selectDomain(domain, card));
     scrollRow.appendChild(card);
   });
 
   scrollWrap.appendChild(scrollRow);
   container.appendChild(scrollWrap);
 
-  // 2. Stats bar (reflects domain filter if active)
+  // Build the rest (stats + sort + project list)
+  updateMobileProjectList(container, filtered, domainCounts, domains);
+}
+
+function updateMobileProjectList(container, filtered, domainCounts, domains) {
+  // Remove old stats, sort bar, and project list (keep domain scroll)
+  const oldStats = container.querySelector('.m-stats-bar');
+  const oldSort = container.querySelector('.m-sort-bar');
+  const oldList = container.querySelector('.m-project-list');
+  if (oldStats) oldStats.remove();
+  if (oldSort) oldSort.remove();
+  if (oldList) oldList.remove();
+
+  const totalProjects = filtered.length;
+  const totalWinners = filtered.filter(p => p.award).length;
+  const totalSemesters = new Set(filtered.map(p => p.semester)).size;
+
+  // 2. Stats bar
   const statsBar = document.createElement('div');
   statsBar.className = 'm-stats-bar';
   if (mobileActiveDomain) {
@@ -1036,6 +1058,21 @@ function buildMobileListView() {
   }
   container.appendChild(statsBar);
 
+  // 2b. Sort bar
+  const sortBar = document.createElement('div');
+  sortBar.className = 'm-sort-bar';
+  ['newest', 'winners'].forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'm-sort-btn' + (mobileSortMode === mode ? ' active' : '');
+    btn.textContent = mode === 'newest' ? 'Newest' : 'Winners';
+    btn.addEventListener('click', () => {
+      mobileSortMode = mode;
+      updateMobileProjectList(container, filtered, domainCounts, domains);
+    });
+    sortBar.appendChild(btn);
+  });
+  container.appendChild(sortBar);
+
   // 3. Project list
   const listDiv = document.createElement('div');
   listDiv.className = 'm-project-list';
@@ -1043,7 +1080,6 @@ function buildMobileListView() {
   if (totalProjects === 0) {
     listDiv.innerHTML = `
       <div class="m-empty-state">
-        <div class="m-empty-state-icon">🔍</div>
         <div class="m-empty-state-text">No projects match your search</div>
         <div class="m-empty-state-sub">Try a different keyword or clear filters</div>
       </div>`;
@@ -1055,8 +1091,17 @@ function buildMobileListView() {
   const showDomains = mobileActiveDomain ? [mobileActiveDomain] : domains;
 
   showDomains.forEach(domain => {
-    const projects = filtered.filter(p => p.domain === domain)
-      .sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
+    let projects = filtered.filter(p => p.domain === domain);
+    // Apply sort
+    if (mobileSortMode === 'winners') {
+      projects.sort((a, b) => {
+        if (a.award && !b.award) return -1;
+        if (!a.award && b.award) return 1;
+        return semesterIndex(b.semester) - semesterIndex(a.semester);
+      });
+    } else {
+      projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
+    }
     if (projects.length === 0) return;
     const color = DOMAIN_COLORS[domain] || '#FFC629';
 
