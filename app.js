@@ -1105,10 +1105,13 @@ function updateMobileProjectList(container, filtered, domainCounts, domains) {
   // 2b. Sort bar
   const sortBar = document.createElement('div');
   sortBar.className = 'm-sort-bar';
-  ['newest', 'winners'].forEach(mode => {
+  const sortModes = activeFilter === 'all' ? ['newest', 'oldest', 'winners'] : ['newest', 'winners'];
+  // If currently on oldest but a semester filter is active, reset
+  if (activeFilter !== 'all' && mobileSortMode === 'oldest') mobileSortMode = 'newest';
+  sortModes.forEach(mode => {
     const btn = document.createElement('button');
     btn.className = 'm-sort-btn' + (mobileSortMode === mode ? ' active' : '');
-    btn.textContent = mode === 'newest' ? 'Newest' : 'Winners';
+    btn.textContent = mode === 'newest' ? 'Newest' : mode === 'oldest' ? 'Oldest' : 'Winners';
     btn.addEventListener('click', () => {
       mobileSortMode = mode;
       updateMobileProjectList(container, filtered, domainCounts, domains);
@@ -1143,6 +1146,8 @@ function updateMobileProjectList(container, filtered, domainCounts, domains) {
         if (!a.award && b.award) return 1;
         return semesterIndex(b.semester) - semesterIndex(a.semester);
       });
+    } else if (mobileSortMode === 'oldest') {
+      projects.sort((a, b) => semesterIndex(a.semester) - semesterIndex(b.semester));
     } else {
       projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
     }
