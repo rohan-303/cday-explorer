@@ -4,7 +4,7 @@
 
 Explore 1,286 capstone projects, research papers, and games from 21 semesters of the KSU College of Computing and Software Engineering (CCSE) Computing Showcase (C-Day), spanning Spring 2016 through Fall 2025.
 
-🔗 **[Live Site](https://www.perplexity.ai/computer/a/cday-showcase-8X6vSL1pT3G963cnCeEuRg)**
+🔗 **[Live Site](https://rohan-303.github.io/cday-explorer/)**
 
 ---
 
@@ -85,7 +85,7 @@ Every project has 4 AI-generated suggestions designed for **other students** to 
 
 ### Generation Pipeline
 
-1. **Input**: Each project's title, abstract (up to 800 chars), domain, and topics are sent to an LLM (Gemini Flash) via batch API calls.
+1. **Input**: Each project's title, abstract (up to 800 chars), domain, and topics are sent to an LLM via batch API calls.
 2. **Prompt**: The system prompt instructs the model to generate suggestions that are:
    - Specific to the project's actual technologies, methods, and domain
    - Actionable with concrete tools, APIs, datasets, and techniques
@@ -130,7 +130,7 @@ Projects are connected to up to 3 related projects from other semesters using ke
 - **Chart.js** — Analytics dashboard charts (domain trends, winner distribution)
 - **Vanilla JavaScript** — No frameworks, ~1,200 lines
 - **Python** — Data pipeline (PDF parsing, web fetching, NLP analysis, LLM API calls)
-- **Gemini Flash** — AI suggestion generation via Anthropic SDK proxy
+- **LLM API** — AI-powered suggestion generation
 
 ---
 
