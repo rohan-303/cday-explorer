@@ -821,6 +821,27 @@ body {
   flex-direction: column;
   gap: 8px;
 }
+.related-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #FFC629;
+  background: rgba(255,198,41,0.06);
+  border: 1px solid rgba(255,198,41,0.12);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 4px;
+  width: 100%;
+}
+.related-back-btn:hover {
+  background: rgba(255,198,41,0.12);
+  border-color: rgba(255,198,41,0.25);
+}
 .related-card {
   display: flex;
   align-items: center;
@@ -831,11 +852,32 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.18s;
+  position: relative;
 }
 .related-card:hover {
   background: rgba(255,255,255,0.05);
   border-color: rgba(255,255,255,0.1);
-  transform: translateX(2px);
+}
+.related-card-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #242424;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #9a9faa;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 10;
+  pointer-events: none;
+}
+.related-card:hover .related-card-tooltip {
+  display: block;
 }
 .related-card-dot {
   width: 8px;

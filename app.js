@@ -609,7 +609,12 @@ function buildGraph(W, H) {
       .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
       .on('end', (event, d) => {
         if (!event.active) simulation.alphaTarget(0);
-        d.fx = null; d.fy = null;
+        // Keep the C-DAY hub fixed at center
+        if (d.id === '__hub__') {
+          d.fx = d.x; d.fy = d.y;
+        } else {
+          d.fx = null; d.fy = null;
+        }
       });
   }
   domainSel.call(dragBehavior());
@@ -693,8 +698,6 @@ function renderProjectList(domain) {
   // Sort
   if (currentSort === 'newest') {
     projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
-  } else if (currentSort === 'oldest') {
-    projects.sort((a, b) => semesterIndex(a.semester) - semesterIndex(b.semester));
   } else if (currentSort === 'winners') {
     projects.sort((a, b) => {
       if (a.award && !b.award) return -1;
@@ -759,9 +762,16 @@ function closePanel() {
 // ────────────────────────────────────────────────
 // Modal
 // ────────────────────────────────────────────────
-function openModal(project) {
+function openModal(project, skipHistory) {
   const overlay = document.getElementById('modalOverlay');
+  const modal = document.getElementById('modal');
   const color = DOMAIN_COLORS[project.domain] || '#FFC629';
+
+  // Scroll modal to top when opening a new project
+  if (modal) modal.scrollTop = 0;
+
+  // Clear history when opening from outside related projects
+  if (!skipHistory && modalHistory.length > 0) modalHistory.length = 0;
 
   // Category badge — muted, text-based
   const catBadge = document.getElementById('modalCategory');
@@ -869,6 +879,9 @@ function openModal(project) {
   overlay.classList.add('open');
 }
 
+// Navigation history for related project browsing
+const modalHistory = [];
+
 function renderRelatedProjects(project) {
   const container = document.getElementById('modalRelated');
   const grid = document.getElementById('relatedGrid');
@@ -879,14 +892,27 @@ function renderRelatedProjects(project) {
   }
 
   grid.innerHTML = '';
-  let count = 0;
 
+  // Back button if there's history
+  if (modalHistory.length > 0) {
+    const backBtn = document.createElement('button');
+    backBtn.className = 'related-back-btn';
+    backBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 4l-4 4 4 4"/></svg> Back to previous project`;
+    backBtn.addEventListener('click', () => {
+      const prev = modalHistory.pop();
+      if (prev) openModal(prev, /* skipHistory */ true);
+    });
+    grid.appendChild(backBtn);
+  }
+
+  let count = 0;
   for (const ref of project.similar) {
     if (count >= 3) break;
     const related = projectMap[ref];
     if (!related) continue;
 
     const color = DOMAIN_COLORS[related.domain] || '#FFC629';
+    const abstractPreview = (related.abstract || '').substring(0, 150).trim();
     const card = document.createElement('div');
     card.className = 'related-card';
     card.innerHTML = `
@@ -896,9 +922,11 @@ function renderRelatedProjects(project) {
         <div class="related-card-meta">${escHtml(related.semester)} · ${escHtml(abbrevDomain(related.domain))}</div>
       </div>
       <svg class="related-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
+      ${abstractPreview ? `<div class="related-card-tooltip">${escHtml(abstractPreview)}${related.abstract && related.abstract.length > 150 ? '...' : ''}</div>` : ''}
     `;
     card.addEventListener('click', () => {
-      openModal(related);
+      modalHistory.push(project);
+      openModal(related, true);
     });
     grid.appendChild(card);
     count++;
