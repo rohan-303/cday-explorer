@@ -5,17 +5,17 @@
    ============================================================ */
 
 const DOMAIN_COLORS = {
-  'AI & Machine Learning':      '#8b5cf6',  // violet
-  'General Computing':           '#6366f1',  // indigo
-  'Cybersecurity':               '#ef4444',  // red
-  'Game Development':            '#f59e0b',  // amber
-  'Web & Mobile Development':    '#06b6d4',  // cyan
-  'IoT & Cloud Computing':       '#10b981',  // emerald
-  'Data Science & Analytics':    '#ec4899',  // pink
-  'Healthcare & Bioinformatics': '#14b8a6',  // teal
-  'Robotics & Hardware':         '#f97316',  // orange
-  'Education Technology':        '#a78bfa',  // lavender
-  'VR & Immersive Tech':         '#22d3ee',  // sky
+  'AI & Machine Learning':      '#66ABFF',  // KSU Blue
+  'General Computing':           '#8A919A',  // Warm gray
+  'Cybersecurity':               '#E05252',  // Muted red
+  'Game Development':            '#F5873D',  // KSU Orange
+  'Web & Mobile Development':    '#5CB88A',  // Soft green
+  'IoT & Cloud Computing':       '#4ECDC4',  // Teal
+  'Data Science & Analytics':    '#A682EB',  // KSU Purple
+  'Healthcare & Bioinformatics': '#5ABEAA',  // Seafoam
+  'Robotics & Hardware':         '#D4915E',  // Copper
+  'Education Technology':        '#8B9DC3',  // Periwinkle
+  'VR & Immersive Tech':         '#69B7CE',  // Sky blue
 };
 
 // ────────────────────────────────────────────────
@@ -175,7 +175,6 @@ function animateParticles() {
 
   // Draw connections
   const maxDist = 120;
-  particleCtx.strokeStyle = 'rgba(99,102,241,0.06)';
   particleCtx.lineWidth = 0.5;
   for (let i = 0; i < particles.length; i++) {
     for (let j = i + 1; j < particles.length; j++) {
@@ -183,8 +182,8 @@ function animateParticles() {
       const dy = particles[i].y - particles[j].y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < maxDist) {
-        const opacity = (1 - dist / maxDist) * 0.08;
-        particleCtx.strokeStyle = `rgba(99,102,241,${opacity})`;
+        const opacity = (1 - dist / maxDist) * 0.05;
+        particleCtx.strokeStyle = `rgba(255,198,41,${opacity})`;
         particleCtx.beginPath();
         particleCtx.moveTo(particles[i].x, particles[i].y);
         particleCtx.lineTo(particles[j].x, particles[j].y);
@@ -197,7 +196,7 @@ function animateParticles() {
   for (const p of particles) {
     particleCtx.beginPath();
     particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    particleCtx.fillStyle = 'rgba(99,102,241,0.15)';
+    particleCtx.fillStyle = 'rgba(255,198,41,0.15)';
     particleCtx.fill();
   }
 
@@ -223,7 +222,7 @@ function init() {
     .attr('id', 'bg-grad')
     .attr('cx', '50%').attr('cy', '50%')
     .attr('r', '60%');
-  grad.append('stop').attr('offset', '0%').attr('stop-color', 'rgba(99,102,241,0.04)');
+  grad.append('stop').attr('offset', '0%').attr('stop-color', 'rgba(255,198,41,0.03)');
   grad.append('stop').attr('offset', '100%').attr('stop-color', 'transparent');
 
   svg.append('rect')
@@ -268,7 +267,7 @@ function buildGraph(W, H) {
       .attr('text-anchor', 'middle')
       .attr('fill', '#52525b')
       .attr('font-size', '14px')
-      .attr('font-family', 'Inter, sans-serif')
+      .attr('font-family', 'Montserrat, sans-serif')
       .text('No projects match your search.');
     return;
   }
@@ -295,7 +294,7 @@ function buildGraph(W, H) {
       type: 'domain',
       domain,
       count: domainCounts[domain],
-      color: DOMAIN_COLORS[domain] || '#6366f1',
+      color: DOMAIN_COLORS[domain] || '#FFC629',
       x, y,
     });
     links.push({ source: '__hub__', target: `domain:${domain}`, type: 'hub-domain' });
@@ -333,7 +332,7 @@ function buildGraph(W, H) {
       type: 'project',
       project: p,
       domain: p.domain,
-      color: DOMAIN_COLORS[p.domain] || '#6366f1',
+      color: DOMAIN_COLORS[p.domain] || '#FFC629',
       isWinner: !!p.award,
       x: domainNode ? domainNode.x + (Math.random() - 0.5) * 60 : W/2,
       y: domainNode ? domainNode.y + (Math.random() - 0.5) * 60 : H/2,
@@ -416,7 +415,7 @@ function buildGraph(W, H) {
     .attr('dy', '0.35em')
     .attr('font-size', '9px')
     .attr('fill', 'rgba(255,255,255,0.5)')
-    .attr('font-family', 'Space Grotesk, sans-serif')
+    .attr('font-family', 'Montserrat, sans-serif')
     .attr('font-weight', '700')
     .text('C•DAY');
 
@@ -431,23 +430,23 @@ function buildGraph(W, H) {
       openPanel(d.domain);
     });
 
-  // Outer glow ring
+  // Outer ring — subtle, thin
   domainSel.append('circle')
     .attr('class', 'outer')
     .attr('r', d => 30 + Math.sqrt(d.count) * 3)
-    .attr('fill', d => d.color)
-    .attr('fill-opacity', 0.1)
+    .attr('fill', 'none')
     .attr('stroke', d => d.color)
     .attr('stroke-width', 1.5)
-    .attr('stroke-opacity', 0.35);
+    .attr('stroke-opacity', 0.3);
 
   // Inner filled circle
   domainSel.append('circle')
     .attr('r', d => 20 + Math.sqrt(d.count) * 2)
     .attr('fill', d => d.color)
-    .attr('fill-opacity', 0.18)
+    .attr('fill-opacity', 0.12)
     .attr('stroke', d => d.color)
-    .attr('stroke-width', 2);
+    .attr('stroke-width', 1.5)
+    .attr('stroke-opacity', 0.5);
 
   // Domain label — split long names
   domainSel.each(function(d) {
@@ -485,11 +484,11 @@ function buildGraph(W, H) {
   domainSel
     .on('mouseenter', function() {
       d3.select(this).select('circle:nth-child(2)')
-        .transition().duration(200).attr('fill-opacity', 0.32);
+        .transition().duration(200).attr('fill-opacity', 0.22);
     })
     .on('mouseleave', function() {
       d3.select(this).select('circle:nth-child(2)')
-        .transition().duration(200).attr('fill-opacity', 0.18);
+        .transition().duration(200).attr('fill-opacity', 0.12);
     });
 
   // Draw project nodes
@@ -503,7 +502,7 @@ function buildGraph(W, H) {
     })
     .on('mouseenter', function(event, d) {
       d3.select(this).select('circle')
-        .transition().duration(150).attr('r', 8).attr('fill-opacity', 1);
+        .transition().duration(150).attr('r', 8).attr('fill-opacity', 1).attr('fill', '#FFC629');
       showTooltip(event, d.project.title);
     })
     .on('mouseleave', function() {
@@ -511,17 +510,18 @@ function buildGraph(W, H) {
       d3.select(this).select('circle')
         .transition().duration(150)
         .attr('r', nd.isWinner ? 6 : 4)
-        .attr('fill-opacity', nd.isWinner ? 0.9 : 0.6);
+        .attr('fill', '#FFC629')
+        .attr('fill-opacity', nd.isWinner ? 1.0 : 0.75);
       hideTooltip();
     });
 
   projSel.append('circle')
     .attr('r', d => d.isWinner ? 6 : 4)
-    .attr('fill', d => d.isWinner ? '#fbbf24' : d.color)
-    .attr('fill-opacity', d => d.isWinner ? 0.9 : 0.6)
-    .attr('stroke', d => d.isWinner ? '#fbbf24' : d.color)
-    .attr('stroke-width', d => d.isWinner ? 1.5 : 0.8)
-    .attr('stroke-opacity', d => d.isWinner ? 0.8 : 0.3);
+    .attr('fill', '#FFC629')
+    .attr('fill-opacity', d => d.isWinner ? 1.0 : 0.75)
+    .attr('stroke', '#FFC629')
+    .attr('stroke-width', d => d.isWinner ? 2 : 0.8)
+    .attr('stroke-opacity', d => d.isWinner ? 0.9 : 0.2);
 
   // Entry animation — stagger domain and project nodes fading in
   if (!entryAnimationDone) {
@@ -552,13 +552,14 @@ function buildGraph(W, H) {
     .attr('class', 'd3-tooltip')
     .style('position', 'fixed')
     .style('pointer-events', 'none')
-    .style('background', 'rgba(15,15,18,0.95)')
-    .style('border', '1px solid rgba(255,255,255,0.1)')
+    .style('background', 'rgba(28,28,28,0.95)')
+    .style('border', '1px solid rgba(255,198,41,0.12)')
     .style('border-radius', '8px')
     .style('padding', '7px 12px')
     .style('font-size', '12px')
-    .style('color', '#e4e4e7')
-    .style('font-family', 'Inter, sans-serif')
+    .style('color', '#e0e0e0')
+    .style('box-shadow', '0 2px 8px rgba(0,0,0,0.5)')
+    .style('font-family', 'Montserrat, sans-serif')
     .style('max-width', '240px')
     .style('line-height', '1.4')
     .style('opacity', 0)
@@ -635,8 +636,8 @@ function abbrevDomain(d) {
 // ────────────────────────────────────────────────
 function highlightDomain(domain) {
   g.selectAll('.project-node circle')
-    .attr('fill-opacity', d => d.domain === domain ? 0.95 : 0.12)
-    .attr('stroke-opacity', d => d.domain === domain ? 0.8 : 0.1);
+    .attr('fill-opacity', d => d.domain === domain ? 1 : 0.12)
+    .attr('stroke-opacity', d => d.domain === domain ? 0.8 : 0.05);
   g.selectAll('.link-line')
     .attr('stroke-opacity', d => {
       const src = d.source, tgt = d.target;
@@ -650,8 +651,8 @@ function highlightDomain(domain) {
 
 function clearHighlight() {
   g.selectAll('.project-node circle')
-    .attr('fill-opacity', d => d.isWinner ? 0.9 : 0.6)
-    .attr('stroke-opacity', d => d.isWinner ? 0.8 : 0.3);
+    .attr('fill-opacity', d => d.isWinner ? 1.0 : 0.75)
+    .attr('stroke-opacity', d => d.isWinner ? 0.9 : 0.2);
   g.selectAll('.link-line')
     .attr('stroke-opacity', d => d.type === 'hub-domain' ? 0.15 : 0.04);
   g.selectAll('.domain-node')
@@ -669,7 +670,7 @@ function openPanel(domain) {
   const badge = document.getElementById('panelDomainBadge');
   const meta = document.getElementById('panelMeta');
 
-  const color = DOMAIN_COLORS[domain] || '#6366f1';
+  const color = DOMAIN_COLORS[domain] || '#FFC629';
   panel.style.setProperty('--domain-color', color);
   badge.textContent = domain;
 
@@ -759,14 +760,14 @@ function closePanel() {
 // ────────────────────────────────────────────────
 function openModal(project) {
   const overlay = document.getElementById('modalOverlay');
-  const color = DOMAIN_COLORS[project.domain] || '#6366f1';
+  const color = DOMAIN_COLORS[project.domain] || '#FFC629';
 
-  // Category badge
+  // Category badge — muted, text-based
   const catBadge = document.getElementById('modalCategory');
   catBadge.textContent = project.domain;
-  catBadge.style.background = color + '20';
-  catBadge.style.borderColor = color + '50';
-  catBadge.style.color = color;
+  catBadge.style.background = 'rgba(255,198,41,0.08)';
+  catBadge.style.borderColor = 'rgba(255,198,41,0.15)';
+  catBadge.style.color = '#FFC629';
 
   // Winner badge
   const winnerBadge = document.getElementById('modalWinner');
@@ -883,7 +884,7 @@ function renderRelatedProjects(project) {
     const related = projectMap[ref];
     if (!related) continue;
 
-    const color = DOMAIN_COLORS[related.domain] || '#6366f1';
+    const color = DOMAIN_COLORS[related.domain] || '#FFC629';
     const card = document.createElement('div');
     card.className = 'related-card';
     card.innerHTML = `
@@ -968,7 +969,7 @@ function buildMobileListView() {
   domains.forEach(domain => {
     const projects = filtered.filter(p => p.domain === domain)
       .sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
-    const color = DOMAIN_COLORS[domain] || '#6366f1';
+    const color = DOMAIN_COLORS[domain] || '#FFC629';
 
     const section = document.createElement('div');
     section.className = 'mobile-domain-section';

@@ -108,13 +108,13 @@ function buildTrendChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(17,17,19,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: 'rgba(28,28,28,0.95)',
+          borderColor: 'rgba(255,198,41,0.12)',
           borderWidth: 1,
-          titleColor: '#e4e4e7',
-          bodyColor: '#a1a1aa',
-          titleFont: { family: 'Space Grotesk', weight: '600', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
+          titleColor: '#e0e0e0',
+          bodyColor: '#9a9faa',
+          titleFont: { family: 'Montserrat', weight: '600', size: 13 },
+          bodyFont: { family: 'Montserrat', size: 12 },
           padding: 12,
           cornerRadius: 8,
           callbacks: {
@@ -126,18 +126,18 @@ function buildTrendChart(data) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+          grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
           ticks: {
-            color: '#52525b',
-            font: { family: 'Inter', size: 10 },
+            color: '#5a6478',
+            font: { family: 'Montserrat', size: 10 },
             maxRotation: 45,
           },
         },
         y: {
-          grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+          grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
           ticks: {
-            color: '#52525b',
-            font: { family: 'Inter', size: 10 },
+            color: '#5a6478',
+            font: { family: 'Montserrat', size: 10 },
             callback: v => v + '%',
           },
           beginAtZero: true,
@@ -196,11 +196,11 @@ function buildWinnerChart(data) {
       datasets: [{
         label: 'Award Winners',
         data: values,
-        backgroundColor: 'rgba(251,191,36,0.35)',
-        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(255,198,41,0.3)',
+        borderColor: '#FFC629',
         borderWidth: 1,
         borderRadius: 4,
-        hoverBackgroundColor: 'rgba(251,191,36,0.6)',
+        hoverBackgroundColor: 'rgba(255,198,41,0.5)',
       }],
     },
     options: {
@@ -209,13 +209,13 @@ function buildWinnerChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(17,17,19,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: 'rgba(28,28,28,0.95)',
+          borderColor: 'rgba(255,198,41,0.12)',
           borderWidth: 1,
-          titleColor: '#e4e4e7',
-          bodyColor: '#fbbf24',
-          titleFont: { family: 'Space Grotesk', weight: '600', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
+          titleColor: '#e0e0e0',
+          bodyColor: '#FFC629',
+          titleFont: { family: 'Montserrat', weight: '600', size: 13 },
+          bodyFont: { family: 'Montserrat', size: 12 },
           padding: 12,
           cornerRadius: 8,
           callbacks: {
@@ -232,16 +232,16 @@ function buildWinnerChart(data) {
         x: {
           grid: { display: false },
           ticks: {
-            color: '#52525b',
-            font: { family: 'Inter', size: 10 },
+            color: '#5a6478',
+            font: { family: 'Montserrat', size: 10 },
             maxRotation: 45,
           },
         },
         y: {
-          grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
+          grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
           ticks: {
-            color: '#52525b',
-            font: { family: 'Inter', size: 10 },
+            color: '#5a6478',
+            font: { family: 'Montserrat', size: 10 },
             stepSize: 4,
           },
           beginAtZero: true,

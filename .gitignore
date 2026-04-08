@@ -1,0 +1,12 @@
+# QA screenshots
+qa-*.jpg
+screenshot-*.jpg
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
