@@ -1395,6 +1395,12 @@ body {
   color: #5a6478;
   flex-wrap: wrap;
 }
+.m-project-card-type {
+  color: #6a7180;
+}
+.m-project-card-award-row {
+  margin-top: 4px;
+}
 .m-project-card-winner {
   display: inline-flex;
   align-items: center;
@@ -1405,8 +1411,9 @@ body {
   background: rgba(255,198,41,0.1);
   border: 1px solid rgba(255,198,41,0.18);
   border-radius: 4px;
-  padding: 1px 6px;
+  padding: 2px 7px;
   white-space: nowrap;
+  letter-spacing: 0.01em;
 }
 .m-project-card-icons {
   margin-left: auto;

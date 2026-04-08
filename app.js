@@ -782,7 +782,8 @@ function openModal(project) {
   document.getElementById('modalTitle').textContent = project.title;
   document.getElementById('modalAuthors').textContent = `By ${project.authors}`;
   document.getElementById('modalDept').style.setProperty('--domain-color', color);
-  document.getElementById('modalDept').textContent = project.department || project.domain;
+  const deptText = [project.type, project.department].filter(Boolean).join(' · ') || project.domain;
+  document.getElementById('modalDept').textContent = deptText;
   document.getElementById('modalSem').textContent = project.semester;
   document.getElementById('modalAbstract').textContent = project.abstract || 'No abstract available.';
 
@@ -1128,16 +1129,17 @@ function updateMobileProjectList(container, filtered, domainCounts, domains) {
       if (p.poster_url) icons += '<span title="Poster">📄</span>';
       if (p.video_url) icons += '<span title="Video">🎥</span>';
 
+      const categoryLabel = p.type || p.department || '';
       card.innerHTML = `
         <div class="m-project-card-accent" style="background:${color}"></div>
         <div class="m-project-card-body">
           <div class="m-project-card-title">${escHtml(p.title)}</div>
           <div class="m-project-card-row">
             <span>${escHtml(p.semester)}</span>
-            ${p.department ? `<span>· ${escHtml(p.department)}</span>` : ''}
-            ${p.award ? `<span class="m-project-card-winner">★ Winner</span>` : ''}
+            ${categoryLabel ? `<span class="m-project-card-type">· ${escHtml(categoryLabel)}</span>` : ''}
             ${icons ? `<span class="m-project-card-icons">${icons}</span>` : ''}
           </div>
+          ${p.award ? `<div class="m-project-card-award-row"><span class="m-project-card-winner">★ ${escHtml(shortAward(p.award))}</span></div>` : ''}
         </div>
       `;
       card.addEventListener('click', () => openModal(p));
