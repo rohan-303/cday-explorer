@@ -603,18 +603,19 @@ function buildGraph(W, H) {
   function dragBehavior() {
     return d3.drag()
       .on('start', (event, d) => {
+        // C-DAY hub is permanently fixed — never drag it
+        if (d.id === '__hub__') return;
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x; d.fy = d.y;
       })
-      .on('drag', (event, d) => { d.fx = event.x; d.fy = event.y; })
+      .on('drag', (event, d) => {
+        if (d.id === '__hub__') return;
+        d.fx = event.x; d.fy = event.y;
+      })
       .on('end', (event, d) => {
+        if (d.id === '__hub__') return;
         if (!event.active) simulation.alphaTarget(0);
-        // Keep the C-DAY hub fixed at center
-        if (d.id === '__hub__') {
-          d.fx = d.x; d.fy = d.y;
-        } else {
-          d.fx = null; d.fy = null;
-        }
+        d.fx = null; d.fy = null;
       });
   }
   domainSel.call(dragBehavior());
@@ -695,9 +696,22 @@ function renderProjectList(domain) {
 
   let projects = getFiltered().filter(p => p.domain === domain);
 
+  // Show/hide "Oldest" button based on whether we're viewing all semesters
+  const oldestBtn = document.querySelector('.sort-btn[data-sort="oldest"]');
+  if (oldestBtn) {
+    oldestBtn.style.display = activeFilter === 'all' ? '' : 'none';
+    // If currently sorted by oldest but a specific semester is selected, switch to newest
+    if (activeFilter !== 'all' && currentSort === 'oldest') {
+      currentSort = 'newest';
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'newest'));
+    }
+  }
+
   // Sort
   if (currentSort === 'newest') {
     projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
+  } else if (currentSort === 'oldest') {
+    projects.sort((a, b) => semesterIndex(a.semester) - semesterIndex(b.semester));
   } else if (currentSort === 'winners') {
     projects.sort((a, b) => {
       if (a.award && !b.award) return -1;
@@ -912,7 +926,8 @@ function renderRelatedProjects(project) {
     if (!related) continue;
 
     const color = DOMAIN_COLORS[related.domain] || '#FFC629';
-    const abstractPreview = (related.abstract || '').substring(0, 150).trim();
+    // Show full abstract in tooltip (CSS handles overflow with max-height + scroll)
+    const abstractPreview = (related.abstract || '').trim();
     const card = document.createElement('div');
     card.className = 'related-card';
     card.innerHTML = `
@@ -922,7 +937,7 @@ function renderRelatedProjects(project) {
         <div class="related-card-meta">${escHtml(related.semester)} · ${escHtml(abbrevDomain(related.domain))}</div>
       </div>
       <svg class="related-card-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 4l4 4-4 4"/></svg>
-      ${abstractPreview ? `<div class="related-card-tooltip">${escHtml(abstractPreview)}${related.abstract && related.abstract.length > 150 ? '...' : ''}</div>` : ''}
+      ${abstractPreview ? `<div class="related-card-tooltip">${escHtml(abstractPreview)}</div>` : ''}
     `;
     card.addEventListener('click', () => {
       modalHistory.push(project);
