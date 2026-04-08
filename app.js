@@ -73,6 +73,7 @@ async function loadData() {
     init();
     initParticleCanvas();
     buildMobileListView();
+    initMobileUI();
     // Start stat bar slide-up after graph settles
     setTimeout(() => {
       document.getElementById('statBar').classList.add('visible');
@@ -954,8 +955,10 @@ function switchView(view) {
 }
 
 // ────────────────────────────────────────────────
-// Mobile List View
+// Mobile List View — Premium Redesign
 // ────────────────────────────────────────────────
+let mobileActiveDomain = null; // null = 'All'
+
 function buildMobileListView() {
   const container = document.getElementById('mobileListScroll');
   if (!container) return;
@@ -963,52 +966,243 @@ function buildMobileListView() {
   const filtered = getFiltered();
   const domainCounts = getDomainCounts(filtered);
   const domains = Object.keys(domainCounts).sort((a, b) => domainCounts[b] - domainCounts[a]);
+  const totalProjects = filtered.length;
+  const totalWinners = filtered.filter(p => p.award).length;
+  const totalSemesters = new Set(filtered.map(p => p.semester)).size;
 
   container.innerHTML = '';
 
+  // 1. Domain bubble scroll row
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = 'm-domain-scroll-wrap';
+  const scrollRow = document.createElement('div');
+  scrollRow.className = 'm-domain-scroll';
+
+  // "All" card
+  const allCard = document.createElement('div');
+  allCard.className = 'm-domain-card' + (mobileActiveDomain === null ? ' active' : '');
+  allCard.style.setProperty('--dc-color', '#FFC629');
+  allCard.innerHTML = `
+    <div class="m-domain-card-count">${totalProjects}</div>
+    <div class="m-domain-card-name">All Projects</div>
+    <div class="m-domain-card-dot" style="background:#FFC629"></div>
+  `;
+  allCard.addEventListener('click', () => {
+    mobileActiveDomain = null;
+    buildMobileListView();
+  });
+  scrollRow.appendChild(allCard);
+
+  // Domain cards
   domains.forEach(domain => {
+    const color = DOMAIN_COLORS[domain] || '#FFC629';
+    const count = domainCounts[domain];
+    const card = document.createElement('div');
+    card.className = 'm-domain-card' + (mobileActiveDomain === domain ? ' active' : '');
+    card.style.setProperty('--dc-color', color);
+    card.innerHTML = `
+      <div class="m-domain-card-count">${count}</div>
+      <div class="m-domain-card-name">${escHtml(abbrevDomain(domain))}</div>
+      <div class="m-domain-card-dot" style="background:${color}"></div>
+    `;
+    card.addEventListener('click', () => {
+      mobileActiveDomain = domain;
+      buildMobileListView();
+      // Scroll the selected card into view
+      setTimeout(() => card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+    });
+    scrollRow.appendChild(card);
+  });
+
+  scrollWrap.appendChild(scrollRow);
+  container.appendChild(scrollWrap);
+
+  // 2. Stats bar
+  const statsBar = document.createElement('div');
+  statsBar.className = 'm-stats-bar';
+  const parts = [`${totalProjects.toLocaleString()} projects`];
+  if (totalWinners > 0) parts.push(`${totalWinners} winners`);
+  parts.push(`${totalSemesters} semesters`);
+  statsBar.textContent = parts.join(' · ');
+  container.appendChild(statsBar);
+
+  // 3. Project list
+  const listDiv = document.createElement('div');
+  listDiv.className = 'm-project-list';
+
+  if (totalProjects === 0) {
+    listDiv.innerHTML = `
+      <div class="m-empty-state">
+        <div class="m-empty-state-icon">🔍</div>
+        <div class="m-empty-state-text">No projects match your search</div>
+        <div class="m-empty-state-sub">Try a different keyword or clear filters</div>
+      </div>`;
+    container.appendChild(listDiv);
+    return;
+  }
+
+  // Determine which domains to show
+  const showDomains = mobileActiveDomain ? [mobileActiveDomain] : domains;
+
+  showDomains.forEach(domain => {
     const projects = filtered.filter(p => p.domain === domain)
       .sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
+    if (projects.length === 0) return;
     const color = DOMAIN_COLORS[domain] || '#FFC629';
 
-    const section = document.createElement('div');
-    section.className = 'mobile-domain-section';
+    // Domain group header (show when viewing "All")
+    if (mobileActiveDomain === null) {
+      const groupHeader = document.createElement('div');
+      groupHeader.className = 'm-domain-group-header';
+      groupHeader.innerHTML = `
+        <div class="m-domain-group-header-dot" style="background:${color}"></div>
+        <span>${escHtml(abbrevDomain(domain))}</span>
+        <span class="m-domain-group-header-count">${projects.length}</span>
+      `;
+      listDiv.appendChild(groupHeader);
+    }
 
-    const header = document.createElement('div');
-    header.className = 'mobile-domain-header';
-    header.innerHTML = `
-      <div class="mobile-domain-dot" style="background:${color}"></div>
-      <div class="mobile-domain-name">${escHtml(domain)}</div>
-      <div class="mobile-domain-count">${projects.length}</div>
-      <svg class="mobile-domain-arrow" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
-    `;
-
-    const projectsDiv = document.createElement('div');
-    projectsDiv.className = 'mobile-domain-projects';
-
+    // Project cards
+    const fragment = document.createDocumentFragment();
     projects.forEach(p => {
       const card = document.createElement('div');
-      card.className = 'mobile-project-card';
+      card.className = 'm-project-card';
+
+      // Icons for poster / video
+      let icons = '';
+      if (p.poster_url) icons += '<span title="Poster">📄</span>';
+      if (p.video_url) icons += '<span title="Video">🎥</span>';
+
       card.innerHTML = `
-        <div class="mobile-project-card-body">
-          <div class="mobile-project-card-title">${escHtml(p.title)}</div>
-          <div class="mobile-project-card-info">
+        <div class="m-project-card-accent" style="background:${color}"></div>
+        <div class="m-project-card-body">
+          <div class="m-project-card-title">${escHtml(p.title)}</div>
+          <div class="m-project-card-row">
             <span>${escHtml(p.semester)}</span>
-            ${p.award ? `<span class="mobile-project-card-award">🏆 Winner</span>` : ''}
+            ${p.department ? `<span>· ${escHtml(p.department)}</span>` : ''}
+            ${p.award ? `<span class="m-project-card-winner">★ Winner</span>` : ''}
+            ${icons ? `<span class="m-project-card-icons">${icons}</span>` : ''}
           </div>
         </div>
       `;
       card.addEventListener('click', () => openModal(p));
-      projectsDiv.appendChild(card);
+      fragment.appendChild(card);
     });
+    listDiv.appendChild(fragment);
+  });
 
-    header.addEventListener('click', () => {
-      section.classList.toggle('expanded');
+  container.appendChild(listDiv);
+
+  // Scroll the active domain card into view if returning to the view
+  if (mobileActiveDomain !== null) {
+    setTimeout(() => {
+      const activeCard = scrollRow.querySelector('.m-domain-card.active');
+      if (activeCard) activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }, 50);
+  }
+}
+
+// ────────────────────────────────────────────────
+// Mobile Search, Filter & Interaction
+// ────────────────────────────────────────────────
+function initMobileUI() {
+  // Search toggle
+  const searchToggle = document.getElementById('mSearchToggle');
+  const searchExpanded = document.getElementById('mSearchExpanded');
+  const searchInput = document.getElementById('mSearchInput');
+  const searchCancel = document.getElementById('mSearchCancel');
+
+  if (searchToggle) {
+    searchToggle.addEventListener('click', () => {
+      searchExpanded.classList.add('open');
+      searchInput.value = searchQuery;
+      setTimeout(() => searchInput.focus(), 100);
     });
+  }
+  if (searchCancel) {
+    searchCancel.addEventListener('click', () => {
+      searchExpanded.classList.remove('open');
+      searchInput.blur();
+    });
+  }
+  if (searchInput) {
+    let mSearchTimer;
+    searchInput.addEventListener('input', e => {
+      clearTimeout(mSearchTimer);
+      mSearchTimer = setTimeout(() => {
+        searchQuery = e.target.value;
+        // Sync desktop search too
+        document.getElementById('searchInput').value = searchQuery;
+        mobileActiveDomain = null;
+        buildMobileListView();
+        rebuildGraph();
+      }, 250);
+    });
+    // Close on Enter
+    searchInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        searchExpanded.classList.remove('open');
+        searchInput.blur();
+      }
+    });
+  }
 
-    section.appendChild(header);
-    section.appendChild(projectsDiv);
-    container.appendChild(section);
+  // Filter toggle & bottom sheet
+  const filterToggle = document.getElementById('mFilterToggle');
+  const filterOverlay = document.getElementById('mFilterOverlay');
+  const filterPills = document.getElementById('mFilterPills');
+
+  if (filterToggle && filterOverlay) {
+    filterToggle.addEventListener('click', () => {
+      populateMobileFilterPills();
+      filterOverlay.classList.add('open');
+    });
+    filterOverlay.addEventListener('click', e => {
+      if (e.target === filterOverlay) {
+        filterOverlay.classList.remove('open');
+      }
+    });
+  }
+}
+
+function populateMobileFilterPills() {
+  const container = document.getElementById('mFilterPills');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const sems = [...new Set(allProjects.map(p => p.semester))]
+    .sort((a, b) => semesterIndex(b) - semesterIndex(a));
+
+  // "All" pill
+  const allPill = document.createElement('button');
+  allPill.className = 'm-filter-pill' + (activeFilter === 'all' ? ' active' : '');
+  allPill.textContent = 'All Semesters';
+  allPill.addEventListener('click', () => {
+    activeFilter = 'all';
+    document.getElementById('semesterSelect').value = 'all';
+    document.getElementById('mFilterToggle').classList.remove('has-filter');
+    document.getElementById('mFilterOverlay').classList.remove('open');
+    mobileActiveDomain = null;
+    buildMobileListView();
+    rebuildGraph();
+  });
+  container.appendChild(allPill);
+
+  sems.forEach(sem => {
+    const count = allProjects.filter(p => p.semester === sem).length;
+    const pill = document.createElement('button');
+    pill.className = 'm-filter-pill' + (activeFilter === sem ? ' active' : '');
+    pill.textContent = `${sem} (${count})`;
+    pill.addEventListener('click', () => {
+      activeFilter = sem;
+      document.getElementById('semesterSelect').value = sem;
+      document.getElementById('mFilterToggle').classList.add('has-filter');
+      document.getElementById('mFilterOverlay').classList.remove('open');
+      mobileActiveDomain = null;
+      buildMobileListView();
+      rebuildGraph();
+    });
+    container.appendChild(pill);
   });
 }
 

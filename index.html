@@ -81,6 +81,12 @@
         <select id="semesterSelect" class="semester-select">
           <option value="all">All Semesters</option>
         </select>
+        <button class="m-search-toggle" id="mSearchToggle" aria-label="Search">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13.5 13.5 3 3"/></svg>
+        </button>
+        <button class="m-filter-toggle" id="mFilterToggle" aria-label="Filter">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h14M5 8h10M7 12h6M9 16h2"/></svg>
+        </button>
         <button class="about-btn" id="aboutBtn" aria-label="About this project">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 9v4"/><circle cx="10" cy="7" r="0.5" fill="currentColor"/></svg>
         </button>
@@ -254,6 +260,21 @@
         <p>Built by <strong>Rohan Jonnalagadda</strong></p>
         <p class="about-ksu">Kennesaw State University · College of Computing and Software Engineering</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Mobile Search Expanded Bar -->
+  <div class="m-search-expanded" id="mSearchExpanded">
+    <input type="text" id="mSearchInput" placeholder="Search projects, authors, topics…" autocomplete="off" />
+    <button class="m-search-cancel" id="mSearchCancel">Cancel</button>
+  </div>
+
+  <!-- Mobile Filter Bottom Sheet -->
+  <div class="m-filter-sheet-overlay" id="mFilterOverlay">
+    <div class="m-filter-sheet" id="mFilterSheet">
+      <div class="m-filter-sheet-handle"></div>
+      <div class="m-filter-sheet-title">Filter by Semester</div>
+      <div class="m-filter-pills" id="mFilterPills"></div>
     </div>
   </div>
 
