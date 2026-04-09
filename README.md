@@ -138,14 +138,80 @@ Projects are connected to up to 3 related projects from other semesters using ke
 
 ```
 cday-showcase/
-├── index.html          # Main page
-├── style.css           # All styles (KSU brand: Montserrat, Gold #FFC629, Black)
-├── app.js              # D3 graph, modals, search, filter, mobile view
-├── analytics.js        # Analytics dashboard (Chart.js charts, word clouds)
-├── projects.json       # 1,286 projects with all metadata (~3.3MB)
-├── analytics.json      # Pre-computed domain trends and keyword data
+├── index.html                          # Main page
+├── style.css                           # All styles (KSU brand)
+├── app.js                              # D3 graph, modals, search, filter, mobile
+├── analytics.js                        # Analytics dashboard (Chart.js)
+├── projects.json                       # All project data (~3.3MB)
+├── analytics.json                      # Pre-computed trends and keywords
+├── scripts/
+│   ├── update_semester.py              # Main pipeline: fetch + classify + merge
+│   ├── generate_suggestions.py         # LLM-powered suggestion generation
+│   ├── compute_analytics.py            # TF-IDF, similarity, analytics.json
+│   └── requirements.txt               # Python dependencies
+├── .github/workflows/
+│   ├── deploy.yml                     # Auto-deploy to GitHub Pages on push
+│   └── update-semester.yml             # One-click semester update pipeline
 └── README.md
 ```
+
+---
+
+## Automated Semester Updates
+
+New semesters can be added with one click via GitHub Actions, or manually via the command line.
+
+### Option 1: GitHub Actions (One-Click)
+
+1. Go to the repo's **Actions** tab
+2. Click **"Add New Semester"** workflow on the left
+3. Click **"Run workflow"**
+4. Enter the semester name (e.g., `Spring 2026`)
+5. Optionally check "Skip AI suggestion generation" if you don't have an API key set up
+6. Click **"Run workflow"** — it will fetch, classify, merge, recompute analytics, commit, and deploy automatically
+
+#### Setting up the API key (one-time)
+
+To enable AI suggestion generation:
+
+1. Go to **Settings > Secrets and variables > Actions**
+2. Click **"New repository secret"**
+3. Name: `OPENAI_API_KEY`, Value: your OpenAI API key (`sk-...`)
+4. (Optional) Go to the **Variables** tab and add:
+   - `OPENAI_MODEL` — model name (default: `gpt-4o-mini`)
+   - `OPENAI_BASE_URL` — API base URL (default: `https://api.openai.com/v1`)
+
+This works with any OpenAI-compatible API (OpenAI, Groq, Together AI, Ollama, etc.) — just set the base URL and model name.
+
+### Option 2: Command Line (Manual)
+
+```bash
+# Install dependencies
+pip install -r scripts/requirements.txt
+
+# Step 1: Fetch and classify new projects
+python scripts/update_semester.py --semester "Spring 2026"
+
+# Step 2: Generate AI suggestions (requires OPENAI_API_KEY)
+export OPENAI_API_KEY="sk-..."
+python scripts/generate_suggestions.py --semester "Spring 2026"
+
+# Step 3: Recompute keywords, similarity, and analytics
+python scripts/compute_analytics.py
+
+# Step 4: Commit and push
+git add projects.json analytics.json
+git commit -m "data: add Spring 2026"
+git push
+```
+
+### What the pipeline does
+
+| Step | Script | What it does |
+|------|--------|--------------|
+| 1 | `update_semester.py` | Fetches project pages from Digital Commons, extracts metadata (title, authors, abstract, department, advisor, poster URL), classifies into 11 domains, checks for winners |
+| 2 | `generate_suggestions.py` | Sends projects in batches to an LLM API, generates 4 "Take It Further" suggestions per project |
+| 3 | `compute_analytics.py` | Runs TF-IDF keyword extraction, computes Jaccard similarity between projects, regenerates `analytics.json` with domain trends and word cloud data |
 
 ---
 
