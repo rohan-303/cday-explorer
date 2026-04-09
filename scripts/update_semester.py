@@ -18,7 +18,6 @@ import os
 import re
 import sys
 import time
-from html import unescape
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -30,14 +29,11 @@ ROOT = Path(__file__).resolve().parent.parent
 PROJECTS_FILE = ROOT / "projects.json"
 ANALYTICS_FILE = ROOT / "analytics.json"
 
-# ─── Digital Commons Base URLs ───────────────────────────────
-DC_BASE = "https://digitalcommons.kennesaw.edu/ccse_computing_showcase"
+# ─── Digital Commons Base ────────────────────────────────────
+DC_BASE = "https://digitalcommons.kennesaw.edu"
 
 # ─── KSU C-Day Events Base ───────────────────────────────────
 CDAY_BASE = "https://campus.kennesaw.edu/colleges-departments/ccse/events/computing-showcase"
-
-# ─── YouTube Channel ─────────────────────────────────────────
-YT_CHANNEL = "https://www.youtube.com/@KSUCCSE"
 
 # ─── Domain Classification Keywords ─────────────────────────
 DOMAIN_RULES = [
@@ -47,7 +43,8 @@ DOMAIN_RULES = [
         "tensorflow", "pytorch", "cnn", "rnn", "lstm", "transformer", "gpt",
         "sentiment analysis", "reinforcement learning", "object detection",
         "image recognition", "chatbot", "llm", "generative ai", "diffusion",
-        "random forest", "decision tree", "regression model", "clustering algorithm",
+        "random forest", "decision tree", "regression model", "predict",
+        "forecasting", "neural", "training model", "accuracy", "f1 score",
     ]),
     ("Cybersecurity", [
         "security", "cyber", "malware", "intrusion detection", "encryption",
@@ -56,130 +53,186 @@ DOMAIN_RULES = [
         "zero trust", "threat", "exploit",
     ]),
     ("Game Development", [
-        "game", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
+        "video game", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
         "fps", "platformer", "puzzle game", "game design", "godot",
-        "game engine", "player experience", "npc",
+        "game engine", "game development", "game jam", "npc", "game mechanic",
+        "board game", "card game", "indie game", "game world",
     ]),
     ("VR & Immersive Tech", [
         "virtual reality", "augmented reality", "mixed reality",
         "hololens", "oculus", "immersive", "vr experience", "ar app", "metaverse",
-        "xr", "spatial computing",
     ]),
     ("Web & Mobile Development", [
         "web application", "mobile app", "android app", "ios app",
         "react", "angular", "vue", "website redesign", "rest api",
-        "responsive design", "full stack", "flutter", "swift", "kotlin",
-        "progressive web", "e-commerce", "cms",
+        "responsive design", "full stack", "flutter", "swift",
+        "website", "web app", "web development", "front end", "backend",
+        "web portal", "web platform", "web site", "web service",
     ]),
     ("Data Science & Analytics", [
         "data analysis", "data visualization", "big data", "analytics",
         "data mining", "hadoop", "spark", "tableau", "power bi",
-        "statistical analysis", "exploratory data", "dashboard",
-        "etl", "data warehouse", "data pipeline",
+        "statistical analysis", "dashboard", "etl", "data warehouse",
     ]),
     ("IoT & Cloud Computing", [
         "iot", "internet of things", "cloud computing", "aws", "azure",
         "raspberry pi", "arduino", "sensor", "embedded system",
         "edge computing", "microcontroller", "docker", "kubernetes",
-        "serverless", "mqtt", "smart home",
     ]),
     ("Healthcare & Bioinformatics", [
-        "health", "medical", "clinical", "patient", "disease", "diagnosis",
-        "bioinformatics", "eeg", "brain", "mri", "cancer", "telemedicine",
-        "drug", "genomic", "protein", "biomedical", "wearable health",
+        "healthcare", "health care", "medical", "clinical", "patient", "disease",
+        "diagnosis", "bioinformatics", "eeg", "brain", "mri", "cancer detection",
+        "telemedicine", "drug", "genomic", "protein", "biomedical",
+        "health monitoring", "medical imaging", "radiology", "pathology",
     ]),
     ("Robotics & Hardware", [
         "robot", "drone", "autonomous", "navigation", "lidar", "slam",
         "ros", "3d print", "circuit", "fpga", "hardware design",
-        "motor control", "servo",
     ]),
     ("Education Technology", [
         "education", "learning platform", "tutoring", "e-learning",
         "lms", "teaching tool", "student engagement", "gamification",
-        "educational", "mooc", "adaptive learning",
     ]),
 ]
 DEFAULT_DOMAIN = "General Computing"
 
-# ─── Semester → URL Slug Mapping ─────────────────────────────
-def semester_to_dc_slug(semester: str) -> str:
-    """Convert 'Fall 2026' → 'Fall_2026'"""
-    return semester.replace(" ", "_")
+
+def classify_domain(title: str, abstract: str) -> str:
+    text = (title + " " + abstract).lower()
+    scores = {}
+    for domain, keywords in DOMAIN_RULES:
+        score = sum(1 for kw in keywords if kw in text)
+        if score > 0:
+            scores[domain] = score
+    if not scores:
+        return DEFAULT_DOMAIN
+    return max(scores, key=scores.get)
+
 
 def semester_to_winner_prefix(semester: str) -> str:
     """Convert 'Fall 2026' → 'fa26', 'Spring 2026' → 'sp26'"""
     parts = semester.split()
-    season = parts[0].lower()[:2]  # 'fa', 'sp', 'su'
-    year = parts[1][2:]  # '26'
+    season = parts[0].lower()[:2]
+    year = parts[1][2:]
     return f"{season}{year}"
 
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 1: Fetch projects from Digital Commons
+# STEP 1: Discover project URLs from Digital Commons
 # ═══════════════════════════════════════════════════════════════
-def fetch_dc_project_list(semester: str) -> list[str]:
-    """Get all project page URLs from the DC semester index."""
-    slug = semester_to_dc_slug(semester)
-    categories = [
-        "Undergraduate_Capstone", "Graduate_Capstone",
-        "Undergraduate_Research", "Graduate_Research",
-        "Masters_Research", "PhD_Research",
-        "Game_Design", "Internship",
+def discover_project_urls(semester: str) -> list[str]:
+    """
+    Digital Commons URL patterns have changed over the years.
+    Try multiple known patterns to find the right one.
+    """
+    parts = semester.split()
+    season = parts[0]   # "Fall" or "Spring" or "Summer"
+    year = parts[1]     # "2026"
+    
+    # Known URL slug patterns (newest first — most likely for future semesters)
+    slug_patterns = [
+        f"{season}_{year}",          # Fall_2025, Spring_2025, Spring_2024, Fall_2024
+        f"{year}{season.lower()}",   # 2023fall
+        f"{season}{year}",           # Fall2021
+        f"{season.lower()}",         # fall, spring (very old)
+    ]
+    
+    # Known category patterns (newest first)
+    category_sets = [
+        # Pattern used since Fall 2024
+        ["Undergraduate_Project", "Graduate_Project", "Undergraduate_Research",
+         "Masters_Research", "PhD_Research"],
+        # Pattern used Spring 2022 - Spring 2024
+        ["Undergraduate_Capstone", "Graduate_Capstone", "Undergraduate_Research",
+         "Graduate_Research", "Masters_Research", "PhD_Research"],
+        # Hyphenated variant (Spring 2022)
+        ["Undergraduate_Capstone", "Graduate-Capstone", "Undergraduate_Research",
+         "Graduate-Research"],
+        # Old lowercase variant
+        ["undergraduatecapstone", "graduatecapstone", "undergraduateresearch",
+         "graduateresearch"],
+        # Game/Internship (Summer 2020)
+        ["internship", "machine_learning"],
+        # Extras that appear in some semesters
+        ["Game_Design"],
     ]
     
     all_urls = []
-    for cat in categories:
-        page = 1
-        while True:
-            url = f"{DC_BASE}/{slug}/{cat}/index.{page}.html" if page > 1 else f"{DC_BASE}/{slug}/{cat}/index.html"
-            print(f"  Fetching {cat} page {page}...", end="", flush=True)
-            try:
-                resp = requests.get(url, timeout=15)
-                if resp.status_code != 200:
-                    print(f" (not found)")
-                    break
-                soup = BeautifulSoup(resp.text, "lxml")
-                links = soup.select("a[href*='/cday/']")
-                project_links = [
-                    urljoin(url, a["href"]) for a in links
-                    if "/cday/" in a["href"] and a["href"].rstrip("/").split("/")[-1].isdigit()
-                ]
-                if not project_links:
-                    print(f" (no projects)")
-                    break
-                # Deduplicate
-                new = [u for u in project_links if u not in all_urls]
-                all_urls.extend(new)
-                print(f" {len(new)} projects")
-                # Check for next page
-                if not soup.select("a.next, a[rel='next']"):
-                    break
-                page += 1
-            except Exception as e:
-                print(f" ERROR: {e}")
-                break
+    found_slug = None
     
-    return list(dict.fromkeys(all_urls))  # preserve order, deduplicate
+    for slug in slug_patterns:
+        if found_slug:
+            break
+        for cat_set in category_sets:
+            for cat in cat_set:
+                url = f"{DC_BASE}/cday/{slug}/{cat}/index.html"
+                try:
+                    resp = requests.get(url, timeout=10, allow_redirects=True)
+                    if resp.status_code != 200:
+                        continue
+                    
+                    soup = BeautifulSoup(resp.text, "lxml")
+                    # Look for project links — they end with a number
+                    links = soup.select("a[href*='/cday/']")
+                    project_links = []
+                    for a in links:
+                        href = a.get("href", "")
+                        full = urljoin(url, href)
+                        # Project pages end with /NUMBER/ or /NUMBER
+                        if re.search(r"/\d+/?$", full.rstrip("/")):
+                            project_links.append(full.rstrip("/") + "/")
+                    
+                    if project_links:
+                        found_slug = slug
+                        new = [u for u in project_links if u not in all_urls]
+                        all_urls.extend(new)
+                        print(f"  Found {len(new)} projects at cday/{slug}/{cat}/")
+                except Exception:
+                    continue
+    
+    # Deduplicate preserving order
+    seen = set()
+    unique = []
+    for u in all_urls:
+        if u not in seen:
+            seen.add(u)
+            unique.append(u)
+    
+    if not unique:
+        print(f"  WARNING: No projects found. Tried slugs: {slug_patterns}")
+        print(f"  Check: {DC_BASE}/cday/ for the correct semester path")
+    
+    return unique
 
 
-def fetch_dc_project(url: str) -> dict:
-    """Fetch a single project page and extract metadata."""
+# ═══════════════════════════════════════════════════════════════
+# STEP 2: Fetch individual project metadata
+# ═══════════════════════════════════════════════════════════════
+def fetch_project(url: str) -> dict:
+    """Fetch a single project page and extract all metadata."""
     resp = requests.get(url, timeout=15)
     soup = BeautifulSoup(resp.text, "lxml")
     
-    # Title
+    # Title — try bepress meta first, then H1
     title = ""
-    title_el = soup.select_one("meta[name='bepress_citation_title']")
-    if title_el:
-        title = title_el.get("content", "")
+    meta_title = soup.select_one("meta[name='bepress_citation_title']")
+    if meta_title:
+        title = meta_title.get("content", "").strip()
     if not title:
-        h1 = soup.select_one("#title h1, h1.title, h1")
+        h1 = soup.select_one("h1")
         title = h1.get_text(strip=True) if h1 else ""
+    
+    # Extract project ID from title (e.g., "UC-0224 Loving Arms...")
+    project_id = ""
+    id_match = re.match(r"^([A-Z]{1,5}-?\d{1,6})\s+", title)
+    if id_match:
+        project_id = id_match.group(1)
+        title = title[id_match.end():].strip()
     
     # Authors
     authors = []
     for meta in soup.select("meta[name='bepress_citation_author']"):
-        authors.append(meta.get("content", ""))
+        authors.append(meta.get("content", "").strip())
     
     # Abstract
     abstract = ""
@@ -189,69 +242,55 @@ def fetch_dc_project(url: str) -> dict:
         if abstract.startswith("Description "):
             abstract = abstract[len("Description "):]
     if not abstract:
-        desc = soup.select_one("meta[name='description']")
-        if desc:
-            abstract = desc.get("content", "")
+        desc_meta = soup.select_one("meta[name='description']")
+        if desc_meta:
+            abstract = desc_meta.get("content", "").strip()
     
-    # Department
+    # Department / Discipline
     dept = ""
-    dept_el = soup.select_one("meta[name='bepress_citation_custom_tag_name'][content='department']")
-    if dept_el:
-        dept_val = dept_el.find_next_sibling("meta")
-        if dept_val:
-            dept = dept_val.get("content", "")
-    # Fallback: look in breadcrumb or discipline
-    if not dept:
-        for meta in soup.select("meta[name='bepress_citation_online_date']"):
-            pass  # just skip
-        disc = soup.select_one("meta[name='bepress_citation_discipline']")
-        if disc:
-            dept = disc.get("content", "").split(";")[0].strip()
+    disc_meta = soup.select_one("meta[name='bepress_citation_discipline']")
+    if disc_meta:
+        dept = disc_meta.get("content", "").split(";")[0].strip()
     
-    # Advisor
+    # Advisor — look for "Advisor:" or "Faculty Advisor" text
     advisor = ""
-    advisor_el = soup.select_one("p.advisor, #advisor, .faculty-advisor")
-    if advisor_el:
-        advisor = advisor_el.get_text(strip=True)
+    for p_tag in soup.select("p"):
+        text = p_tag.get_text(strip=True)
+        if "advisor" in text.lower() and len(text) < 200:
+            advisor = text
+            break
     
     # Poster PDF URL
     poster_url = ""
     pdf_meta = soup.select_one("meta[name='bepress_citation_pdf_url']")
     if pdf_meta:
-        poster_url = pdf_meta.get("content", "")
+        poster_url = pdf_meta.get("content", "").strip()
     
-    # Project ID (from title prefix like "UC-0224" or page content)
-    project_id = ""
-    # Try to find ID pattern in title
-    id_match = re.match(r"^([A-Z]+-?\d+)\s", title)
-    if id_match:
-        project_id = id_match.group(1)
-        title = title[id_match.end():].strip()
-    else:
-        # Try in the URL or page
-        for text in soup.stripped_strings:
-            m = re.match(r"^([A-Z]{1,4}-?\d{1,5})\b", text)
-            if m:
-                project_id = m.group(1)
-                break
-    
-    # Type (from URL path)
+    # Project type from URL path
     project_type = "Other"
     url_lower = url.lower()
-    if "undergraduate_capstone" in url_lower:
-        project_type = "Undergraduate Project"
-    elif "graduate_capstone" in url_lower:
-        project_type = "Graduate Project"
-    elif "undergraduate_research" in url_lower:
-        project_type = "Undergraduate Research"
-    elif "graduate_research" in url_lower or "masters_research" in url_lower:
-        project_type = "Graduate Research"
-    elif "phd_research" in url_lower:
-        project_type = "PhD Research"
-    elif "game_design" in url_lower:
-        project_type = "Game Design"
-    elif "internship" in url_lower:
-        project_type = "Internship"
+    type_map = {
+        "undergraduate_project": "Undergraduate Project",
+        "undergraduate_capstone": "Undergraduate Project",
+        "undergraduatecapstone": "Undergraduate Project",
+        "graduate_project": "Graduate Project",
+        "graduate_capstone": "Graduate Project",
+        "graduate-capstone": "Graduate Project",
+        "graduatecapstone": "Graduate Project",
+        "undergraduate_research": "Undergraduate Research",
+        "undergraduateresearch": "Undergraduate Research",
+        "graduate_research": "Graduate Research",
+        "graduate-research": "Graduate Research",
+        "graduateresearch": "Graduate Research",
+        "masters_research": "Graduate Research",
+        "phd_research": "PhD Research",
+        "game_design": "Game Design",
+        "internship": "Internship",
+    }
+    for pattern, ptype in type_map.items():
+        if pattern in url_lower:
+            project_type = ptype
+            break
     
     return {
         "id": project_id,
@@ -269,89 +308,53 @@ def fetch_dc_project(url: str) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════
-# STEP 2: Classify domains
-# ═══════════════════════════════════════════════════════════════
-def classify_domain(title: str, abstract: str) -> str:
-    """Assign a domain based on title + abstract keywords."""
-    text = (title + " " + abstract).lower()
-    scores = {}
-    for domain, keywords in DOMAIN_RULES:
-        score = sum(1 for kw in keywords if kw in text)
-        if score > 0:
-            scores[domain] = score
-    if not scores:
-        return DEFAULT_DOMAIN
-    return max(scores, key=scores.get)
-
-
-# ═══════════════════════════════════════════════════════════════
 # STEP 3: Fetch winners
 # ═══════════════════════════════════════════════════════════════
 def fetch_winners(semester: str) -> dict[str, str]:
-    """Try to fetch winner data from the C-Day winner page."""
     prefix = semester_to_winner_prefix(semester)
     url = f"{CDAY_BASE}/{prefix}-cday-winners.php"
     
-    print(f"  Checking winners at {url}...", end="", flush=True)
+    print(f"  Checking {url}...", end="", flush=True)
     try:
         resp = requests.get(url, timeout=10)
         if resp.status_code != 200:
-            print(f" (not found)")
+            print(" (not posted yet)")
             return {}
         
         soup = BeautifulSoup(resp.text, "lxml")
-        text = soup.get_text()
-        
-        # Parse winner entries — look for patterns like "Project ID - Award"
         winners = {}
-        # Look for <li> or <p> elements with project IDs and award text
-        for el in soup.select("li, p, tr"):
-            el_text = el.get_text(strip=True)
-            # Match patterns like "UC-123 Title - 1st Place..."
-            m = re.search(r"([A-Z]{1,4}-?\d{1,5})", el_text)
-            if m:
-                pid = m.group(1)
-                # Look for award text
-                for award_term in ["1st Place", "2nd Place", "3rd Place", 
-                                   "First Place", "Second Place", "Third Place",
-                                   "Audience Favorite"]:
-                    if award_term.lower() in el_text.lower():
-                        # Extract the full award context
-                        award = el_text[el_text.lower().index(award_term.lower().split()[0]):]
-                        award = award[:60].strip()
-                        winners[pid] = award
-                        break
         
-        print(f" found {len(winners)} winners")
+        for el in soup.select("li, p, td, tr, div"):
+            text = el.get_text(strip=True)
+            m = re.search(r"([A-Z]{1,5}-?\d{1,6})", text)
+            if not m:
+                continue
+            pid = m.group(1)
+            for term in ["1st Place", "2nd Place", "3rd Place",
+                         "First Place", "Second Place", "Third Place",
+                         "Audience Favorite"]:
+                if term.lower() in text.lower():
+                    idx = text.lower().index(term.lower().split()[0])
+                    award = text[idx:idx+60].strip()
+                    winners[pid] = award
+                    break
+        
+        print(f" {len(winners)} winners")
         return winners
     except Exception as e:
-        print(f" ERROR: {e}")
+        print(f" error: {e}")
         return {}
-
-
-# ═══════════════════════════════════════════════════════════════
-# STEP 4: Match YouTube videos
-# ═══════════════════════════════════════════════════════════════
-def match_youtube_videos(projects: list[dict], semester: str) -> int:
-    """Try to match YouTube videos from KSUCCSE channel.
-    
-    Note: This is a best-effort match. YouTube API would be more reliable
-    but requires an API key. This scrapes the channel page.
-    """
-    # For now, just mark as TODO — manual step or use yt-dlp
-    print(f"  YouTube matching: skipped (add videos manually or run yt-dlp)")
-    return 0
 
 
 # ═══════════════════════════════════════════════════════════════
 # MAIN PIPELINE
 # ═══════════════════════════════════════════════════════════════
 def main():
-    parser = argparse.ArgumentParser(description="C-Day Explorer — Semester Update Pipeline")
-    parser.add_argument("--semester", required=True, help="Semester to fetch, e.g., 'Spring 2026'")
-    parser.add_argument("--skip-suggestions", action="store_true", help="Skip LLM suggestion generation")
-    parser.add_argument("--skip-analytics", action="store_true", help="Skip analytics recomputation")
-    parser.add_argument("--dry-run", action="store_true", help="Fetch and classify but don't write files")
+    parser = argparse.ArgumentParser(description="C-Day Explorer — Semester Update")
+    parser.add_argument("--semester", required=True, help="e.g., 'Spring 2026'")
+    parser.add_argument("--skip-suggestions", action="store_true")
+    parser.add_argument("--skip-analytics", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     
     semester = args.semester
@@ -359,68 +362,55 @@ def main():
     print(f"C-Day Explorer — Adding {semester}")
     print(f"{'='*60}")
     
-    # ── Load existing projects ───────────────────────────────
-    print(f"\n[1/7] Loading existing projects...")
+    # Load existing
+    print(f"\n[1/6] Loading existing projects...")
     existing = []
     if PROJECTS_FILE.exists():
         with open(PROJECTS_FILE) as f:
             existing = json.load(f)
-    existing_keys = set()
-    for p in existing:
-        existing_keys.add(p["id"] + "|" + p.get("semester", ""))
-    print(f"  Loaded {len(existing)} existing projects ({len(existing_keys)} unique)")
+    print(f"  {len(existing)} existing projects")
     
-    # Check if semester already exists
+    # Check for duplicates
     existing_semester = [p for p in existing if p.get("semester") == semester]
     if existing_semester:
         print(f"  WARNING: {len(existing_semester)} projects already exist for {semester}")
-        resp = input("  Continue and replace? [y/N]: ")
-        if resp.lower() != "y":
-            print("  Aborted.")
-            return
-        # Remove existing semester projects
-        existing = [p for p in existing if p.get("semester") != semester]
-        existing_keys = set(p["id"] + "|" + p.get("semester", "") for p in existing)
+        if not args.dry_run:
+            existing = [p for p in existing if p.get("semester") != semester]
+            print(f"  Removed old {semester} data — will replace with fresh fetch")
     
-    # ── Fetch from Digital Commons ───────────────────────────
-    print(f"\n[2/7] Fetching projects from Digital Commons...")
-    project_urls = fetch_dc_project_list(semester)
-    print(f"  Found {len(project_urls)} project pages")
+    # Discover URLs
+    print(f"\n[2/6] Discovering project URLs on Digital Commons...")
+    urls = discover_project_urls(semester)
+    print(f"  Total: {len(urls)} project pages found")
     
-    if not project_urls:
-        print("  No projects found. Check if the semester exists on Digital Commons.")
-        print(f"  Expected URL: {DC_BASE}/{semester_to_dc_slug(semester)}/")
+    if not urls:
+        print("\n  No projects found. The semester may not be on Digital Commons yet.")
         return
     
-    # ── Fetch each project ───────────────────────────────────
-    print(f"\n[3/7] Fetching individual project metadata...")
+    # Fetch each
+    print(f"\n[3/6] Fetching project metadata...")
     new_projects = []
-    for i, url in enumerate(project_urls):
-        print(f"  [{i+1}/{len(project_urls)}] ", end="", flush=True)
+    for i, url in enumerate(urls):
+        print(f"  [{i+1}/{len(urls)}] ", end="", flush=True)
         try:
-            proj = fetch_dc_project(url)
+            proj = fetch_project(url)
             proj["semester"] = semester
-            print(f"{proj['id'] or '???'}: {proj['title'][:50]}")
+            proj["domain"] = classify_domain(proj["title"], proj["abstract"])
+            print(f"{proj['id'] or '???'}: {proj['title'][:45]} [{proj['domain'][:15]}]")
             new_projects.append(proj)
-            time.sleep(0.3)  # Be respectful
+            time.sleep(0.2)
         except Exception as e:
             print(f"ERROR: {e}")
-    
     print(f"  Fetched {len(new_projects)} projects")
     
-    # ── Classify domains ─────────────────────────────────────
-    print(f"\n[4/7] Classifying domains...")
-    for p in new_projects:
-        p["domain"] = classify_domain(p["title"], p["abstract"])
-    
-    # Domain distribution
+    # Domain stats
     from collections import Counter
-    domain_counts = Counter(p["domain"] for p in new_projects)
-    for d, c in domain_counts.most_common():
+    print(f"\n[4/6] Domain distribution:")
+    for d, c in Counter(p["domain"] for p in new_projects).most_common():
         print(f"  {d}: {c}")
     
-    # ── Fetch winners ────────────────────────────────────────
-    print(f"\n[5/7] Checking for winners...")
+    # Winners
+    print(f"\n[5/6] Checking winners...")
     winners = fetch_winners(semester)
     if winners:
         matched = 0
@@ -428,59 +418,51 @@ def main():
             if p["id"] in winners:
                 p["award"] = winners[p["id"]]
                 matched += 1
-        print(f"  Matched {matched} winners to projects")
-    else:
-        print(f"  No winners found (may not be posted yet)")
+        print(f"  Matched {matched} winners")
     
-    # ── Generate suggestions ─────────────────────────────────
+    # Suggestions
     if not args.skip_suggestions:
-        print(f"\n[6/7] Generating AI suggestions...")
-        try:
-            from generate_suggestions import generate_suggestions_for_projects
-            generate_suggestions_for_projects(new_projects)
-        except ImportError:
-            print("  generate_suggestions.py not found or missing API key")
-            print("  Run separately: python scripts/generate_suggestions.py")
-        except Exception as e:
-            print(f"  Suggestion generation failed: {e}")
-            print("  Run separately: python scripts/generate_suggestions.py")
+        print(f"\n[6/6] Generating suggestions...")
+        api_key = os.environ.get("OPENAI_API_KEY", "")
+        if api_key:
+            sys.path.insert(0, str(Path(__file__).parent))
+            try:
+                from generate_suggestions import generate_suggestions_for_projects
+                generate_suggestions_for_projects(new_projects)
+            except Exception as e:
+                print(f"  Failed: {e}")
+        else:
+            print("  Skipped (no OPENAI_API_KEY)")
     else:
-        print(f"\n[6/7] Skipping suggestion generation (--skip-suggestions)")
+        print(f"\n[6/6] Skipping suggestions")
     
-    # ── Merge and save ───────────────────────────────────────
-    print(f"\n[7/7] Merging and saving...")
-    all_projects = existing + new_projects
-    
+    # Merge and save
     if args.dry_run:
-        print(f"  DRY RUN — would write {len(all_projects)} projects ({len(new_projects)} new)")
-        # Print a sample
-        for p in new_projects[:3]:
-            print(f"    {p['id']}: {p['title'][:50]} [{p['domain']}]")
+        print(f"\n--- DRY RUN ---")
+        print(f"Would add {len(new_projects)} projects for {semester}")
+        for p in new_projects[:5]:
+            print(f"  {p['id']}: {p['title'][:50]} [{p['domain']}]")
+        if len(new_projects) > 5:
+            print(f"  ... and {len(new_projects)-5} more")
         return
     
+    all_projects = existing + new_projects
     with open(PROJECTS_FILE, "w") as f:
         json.dump(all_projects, f, indent=2)
-    print(f"  Saved {len(all_projects)} projects ({len(new_projects)} new)")
     
-    # ── Recompute analytics ──────────────────────────────────
+    # Recompute analytics
     if not args.skip_analytics:
-        print(f"\n[BONUS] Recomputing analytics...")
+        sys.path.insert(0, str(Path(__file__).parent))
         try:
             from compute_analytics import recompute_all
             recompute_all(all_projects, ANALYTICS_FILE)
-        except ImportError:
-            print("  compute_analytics.py not found")
-            print("  Run separately: python scripts/compute_analytics.py")
+        except Exception as e:
+            print(f"  Analytics failed: {e}")
     
     print(f"\n{'='*60}")
     print(f"DONE! Added {len(new_projects)} projects for {semester}")
-    print(f"Total projects: {len(all_projects)}")
+    print(f"Total: {len(all_projects)} projects")
     print(f"{'='*60}")
-    print(f"\nNext steps:")
-    print(f"  1. Review projects.json for accuracy")
-    print(f"  2. Run: python scripts/generate_suggestions.py  (if skipped)")
-    print(f"  3. Run: python scripts/compute_analytics.py     (if skipped)")
-    print(f"  4. Commit and push to deploy")
 
 
 if __name__ == "__main__":
