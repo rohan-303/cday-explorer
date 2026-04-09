@@ -1225,6 +1225,23 @@ body {
 .about-footer strong {
   color: #e0e0e0;
 }
+.about-linkedin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #0A66C2;
+  background: rgba(10, 102, 194, 0.1);
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all 0.15s;
+}
+.about-linkedin:hover {
+  background: rgba(10, 102, 194, 0.2);
+  transform: translateY(-1px);
+}
 .about-ksu {
   font-size: 0.75rem !important;
   color: #5a6478 !important;
