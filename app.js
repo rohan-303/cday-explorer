@@ -183,7 +183,7 @@ function animateParticles() {
       const dy = particles[i].y - particles[j].y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < maxDist) {
-        const opacity = (1 - dist / maxDist) * 0.05;
+        const opacity = (1 - dist / maxDist) * 0.4;
         particleCtx.strokeStyle = `rgba(255,198,41,${opacity})`;
         particleCtx.beginPath();
         particleCtx.moveTo(particles[i].x, particles[i].y);
@@ -197,7 +197,7 @@ function animateParticles() {
   for (const p of particles) {
     particleCtx.beginPath();
     particleCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    particleCtx.fillStyle = 'rgba(255,198,41,0.15)';
+    particleCtx.fillStyle = 'rgba(255,198,41,0.65)';
     particleCtx.fill();
   }
 
@@ -233,9 +233,45 @@ function init() {
   g = svg.append('g');
 
   zoomBehavior = d3.zoom()
-    .scaleExtent([0.2, 4])
-    .on('zoom', (event) => g.attr('transform', event.transform));
+    .scaleExtent([0.15, 6])
+    .filter(event => {
+      // Allow dragging always, but only allow wheel zoom if Ctrl is held
+      if (event.type === 'wheel') return event.ctrlKey;
+      return true;
+    })
+    .on('zoom', (event) => {
+      g.attr('transform', event.transform);
+      // Pan parallax for background
+      const canvas = document.getElementById('particleCanvas');
+      if (canvas) {
+        const x = event.transform.x * 0.05;
+        const y = event.transform.y * 0.05;
+        canvas.style.transform = `translate(${x}px, ${y}px)`;
+      }
+    });
   svg.call(zoomBehavior);
+
+  // Graph navigation buttons
+  document.getElementById('zoomIn').onclick = () => {
+    svg.transition().duration(400).call(zoomBehavior.scaleBy, 1.5);
+  };
+  document.getElementById('zoomOut').onclick = () => {
+    svg.transition().duration(400).call(zoomBehavior.scaleBy, 0.65);
+  };
+  document.getElementById('zoomReset').onclick = () => {
+    fitGraph(true);
+  };
+
+  // Mouse Parallax for Background
+  window.addEventListener('mousemove', (e) => {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas || currentView !== 'graph') return;
+    const moveX = (e.clientX - window.innerWidth / 2) * 0.015;
+    const moveY = (e.clientY - window.innerHeight / 2) * 0.015;
+    // Combine with current pan if needed, but for simplicity just apply offset
+    canvas.style.marginLeft = `${moveX}px`;
+    canvas.style.marginTop = `${moveY}px`;
+  });
 
   buildGraph(W, H);
 
@@ -483,35 +519,39 @@ function buildGraph(W, H) {
 
   // Domain hover
   domainSel
-    .on('mouseenter', function() {
-      d3.select(this).select('circle:nth-child(2)')
-        .transition().duration(200).attr('fill-opacity', 0.22);
+    .on('mouseenter', function(event, d) {
+      d3.select(this).select('circle.outer').attr('r', 30 + Math.sqrt(d.count) * 3 + 12);
+      d3.select(this).select('circle:nth-child(2)').attr('fill-opacity', 0.35).attr('r', 20 + Math.sqrt(d.count) * 2 + 12);
+      
+      // Add a ripple ring
+      d3.select(this).append('circle')
+        .attr('class', 'ripple-ring')
+        .attr('r', 30 + Math.sqrt(d.count) * 3)
+        .attr('stroke', d.color)
+        .on('animationend', function() { d3.select(this).remove(); });
     })
-    .on('mouseleave', function() {
-      d3.select(this).select('circle:nth-child(2)')
-        .transition().duration(200).attr('fill-opacity', 0.12);
+    .on('mouseleave', function(event, d) {
+      d3.select(this).select('circle.outer').attr('r', 30 + Math.sqrt(d.count) * 3);
+      d3.select(this).select('circle:nth-child(2)').attr('fill-opacity', 0.12).attr('r', 20 + Math.sqrt(d.count) * 2);
     });
 
   // Draw project nodes
   const projSel = g.selectAll('.project-node')
     .data(nodes.filter(n => n.type === 'project'))
     .join('g')
-    .attr('class', 'project-node')
+    .attr('class', d => `project-node ${d.isWinner ? 'winner' : ''}`)
     .on('click', (event, d) => {
       event.stopPropagation();
       openModal(d.project);
     })
     .on('mouseenter', function(event, d) {
-      d3.select(this).select('circle')
-        .transition().duration(150).attr('r', 8).attr('fill-opacity', 1).attr('fill', '#FFC629');
+      d3.select(this).select('circle').attr('r', 10).attr('fill-opacity', 1);
       showTooltip(event, d.project.title);
     })
     .on('mouseleave', function() {
       const nd = d3.select(this).datum();
       d3.select(this).select('circle')
-        .transition().duration(150)
         .attr('r', nd.isWinner ? 6 : 4)
-        .attr('fill', '#FFC629')
         .attr('fill-opacity', nd.isWinner ? 1.0 : 0.75);
       hideTooltip();
     });
@@ -576,17 +616,9 @@ function buildGraph(W, H) {
     tooltip.style('opacity', 0);
   }
 
-  // Auto-fit after settle
+  // Auto-fit with cinematic entry
   simulation.on('end', () => {
-    const bounds = g.node().getBBox();
-    const padding = 60;
-    const dx = bounds.width + padding * 2;
-    const dy = bounds.height + padding * 2;
-    const scale = Math.min(0.95, Math.min(W / dx, H / dy));
-    const tx = (W - scale * (bounds.x * 2 + bounds.width)) / 2;
-    const ty = (H - scale * (bounds.y * 2 + bounds.height)) / 2;
-    svg.transition().duration(600).ease(d3.easeCubicOut)
-      .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    fitGraph(true, 1500);
   });
 
   // Tick
@@ -622,6 +654,35 @@ function buildGraph(W, H) {
   projSel.call(dragBehavior());
 
   if (activeDomain) highlightDomain(activeDomain);
+}
+
+function fitGraph(animated = false, duration = 800) {
+  if (!g || !svg || !zoomBehavior) return;
+  const svgEl = document.getElementById('graph');
+  const W = svgEl.clientWidth || window.innerWidth;
+  const H = svgEl.clientHeight || (window.innerHeight - 64);
+
+  const bounds = g.node().getBBox();
+  const padding = 80;
+  const dx = bounds.width + padding * 2;
+  const dy = bounds.height + padding * 2;
+  const scale = Math.min(1.2, Math.min(W / dx, H / dy));
+  const tx = (W - scale * (bounds.x * 2 + bounds.width)) / 2;
+  const ty = (H - scale * (bounds.y * 2 + bounds.height)) / 2;
+
+  const transform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+
+  if (animated) {
+    if (!entryAnimationDone) {
+      svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(W/2, H/2).scale(0.2));
+    }
+    svg.transition()
+      .duration(duration)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehavior.transform, transform);
+  } else {
+    svg.call(zoomBehavior.transform, transform);
+  }
 }
 
 function abbrevDomain(d) {
