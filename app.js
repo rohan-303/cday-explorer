@@ -63,6 +63,7 @@ async function loadData() {
   });
 
   populateSemesterDropdown();
+  applyDynamicUiStats();
 
   // Hide loading screen
   const loadingScreen = document.getElementById('loadingScreen');
@@ -79,6 +80,61 @@ async function loadData() {
       document.getElementById('statBar').classList.add('visible');
     }, 1800);
   }, 400);
+}
+
+function applyDynamicUiStats() {
+  const totalProjects = allProjects.length;
+  const totalSemesters = new Set(allProjects.map(p => p.semester).filter(Boolean)).size;
+  const totalWinners = allProjects.filter(p => p.award).length;
+  const totalDomains = new Set(allProjects.map(p => p.domain).filter(Boolean)).size;
+
+  const years = allProjects
+    .map(p => {
+      const parts = (p.semester || '').split(' ');
+      return parts.length === 2 ? parseInt(parts[1], 10) : NaN;
+    })
+    .filter(y => !Number.isNaN(y));
+  const minYear = years.length ? Math.min(...years) : null;
+  const maxYear = years.length ? Math.max(...years) : null;
+  const yearRange = minYear && maxYear ? `${minYear}–${maxYear}` : '';
+
+  const loadingSubtext = document.getElementById('loadingSubtext');
+  if (loadingSubtext) loadingSubtext.textContent = `Loading ${totalProjects.toLocaleString()} projects…`;
+
+  const logoSub = document.getElementById('logoSub');
+  if (logoSub) logoSub.textContent = yearRange ? `KSU CCSE · ${yearRange}` : 'KSU CCSE';
+
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.placeholder = `Search ${totalProjects.toLocaleString()}+ projects…`;
+
+  const statTargets = {
+    projects: totalProjects,
+    semesters: totalSemesters,
+    winners: totalWinners,
+    domains: totalDomains,
+  };
+  document.querySelectorAll('.hero-stat-num[data-stat]').forEach(el => {
+    const key = el.getAttribute('data-stat');
+    if (Object.prototype.hasOwnProperty.call(statTargets, key)) {
+      el.dataset.target = String(statTargets[key]);
+      el.textContent = '0';
+    }
+  });
+
+  const trendSub = document.getElementById('trendSub');
+  if (trendSub) trendSub.textContent = `How computing focus areas have shifted across ${totalSemesters} semesters`;
+
+  const aboutDesc = document.getElementById('aboutDesc');
+  if (aboutDesc) {
+    aboutDesc.textContent =
+      `An interactive visualization of capstone projects, research, and innovation from Kennesaw State University's College of Computing and Software Engineering. Explore ${totalProjects.toLocaleString()} projects across ${totalDomains} domains spanning ${totalSemesters} semesters of C-Day showcases.`;
+  }
+
+  const aboutCoverageItem = document.getElementById('aboutCoverageItem');
+  if (aboutCoverageItem) {
+    const rangeText = yearRange ? ` (${yearRange})` : '';
+    aboutCoverageItem.textContent = `Data collected from ${totalSemesters} semesters of C-Day archives${rangeText}`;
+  }
 }
 
 function populateSemesterDropdown() {
