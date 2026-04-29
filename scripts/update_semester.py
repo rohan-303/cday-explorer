@@ -37,6 +37,67 @@ CDAY_BASE = "https://campus.kennesaw.edu/colleges-departments/ccse/events/comput
 
 # ─── Domain Classification Keywords ─────────────────────────
 DOMAIN_RULES = [
+    ("VR & Immersive Tech", [
+        "virtual reality", "augmented reality", "mixed reality",
+        "hololens", "oculus", "immersive", "vr experience", "ar app", "metaverse",
+        "quest 2", "quest 3", "htc vive", "extended reality", "xr", "haptic",
+        "stereoscopic", "3d environment", "unity vr", "headset", "ar experience",
+    ]),
+    ("Game Development", [
+        "video game", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
+        "fps", "platformer", "puzzle game", "game design", "godot",
+        "game engine", "game development", "game jam", "npc", "game mechanic",
+        "board game", "card game", "indie game", "game world", "combat",
+        "playthrough", "enemies", "character", "controller", "interactive entertainment",
+        "puzzle", "entity", "simulator", "racing game", "story-driven", "plugin",
+        "mod", "minecraft", "speedrun", "esports", "esport",
+    ]),
+    ("Cybersecurity", [
+        "security", "cyber", "malware", "intrusion detection", "encryption",
+        "vulnerability", "attack", "firewall", "penetration test", "phishing",
+        "ransomware", "forensic", "ids", "hardening", "authentication",
+        "zero trust", "threat", "exploit", "cryptography", "blockchain",
+        "network security", "privacy", "packet", "botnet", "incident response",
+    ]),
+    ("Healthcare & Bioinformatics", [
+        "healthcare", "health care", "medical", "clinical", "patient", "disease",
+        "diagnosis", "bioinformatics", "eeg", "brain", "mri", "cancer detection",
+        "telemedicine", "drug", "genomic", "protein", "biomedical",
+        "health monitoring", "medical imaging", "radiology", "pathology",
+        "hipaa", "clinic", "hospital", "doctor", "health",
+    ]),
+    ("Robotics & Hardware", [
+        "robot", "drone", "autonomous", "navigation", "lidar", "slam",
+        "ros", "3d print", "circuit", "fpga", "hardware design",
+        "microprocessor", "pcb", "mechatronics", "hardware",
+    ]),
+    ("IoT & Cloud Computing", [
+        "iot", "internet of things", "cloud computing", "aws", "azure",
+        "raspberry pi", "arduino", "sensor", "embedded system",
+        "edge computing", "microcontroller", "docker", "kubernetes",
+        "serverless", "distributed system", "mqtt", "node-red", "cloud",
+    ]),
+    ("Education Technology", [
+        "education", "learning platform", "tutoring", "e-learning",
+        "lms", "teaching tool", "student engagement", "gamification",
+        "classroom", "academic", "student success", "pedagogy", "educational",
+    ]),
+    ("Web & Mobile Development", [
+        "web application", "mobile app", "android app", "ios app",
+        "react", "angular", "vue", "website redesign", "rest api",
+        "responsive design", "full stack", "flutter", "swift",
+        "website", "web app", "web development", "front end", "backend",
+        "web portal", "web platform", "web site", "web service", "ui/ux",
+        "user interface", "user experience", "progressive web app", "pwa",
+        "bot", "discord", "marketplace", "ecommerce", "e-commerce", "application",
+    ]),
+    ("Data Science & Analytics", [
+        "data analysis", "data visualization", "big data", "analytics",
+        "data mining", "hadoop", "spark", "tableau", "power bi",
+        "statistical analysis", "dashboard", "etl", "data warehouse",
+        "data science", "data set", "regression", "correlation", "pandas",
+        "numpy", "matplotlib", "seaborn", "business intelligence",
+    ]),
     ("AI & Machine Learning", [
         "machine learning", "deep learning", "neural network", "artificial intelligence",
         "nlp", "natural language", "computer vision", "classification", "prediction model",
@@ -45,53 +106,7 @@ DOMAIN_RULES = [
         "image recognition", "chatbot", "llm", "generative ai", "diffusion",
         "random forest", "decision tree", "regression model", "predict",
         "forecasting", "neural", "training model", "accuracy", "f1 score",
-    ]),
-    ("Cybersecurity", [
-        "security", "cyber", "malware", "intrusion detection", "encryption",
-        "vulnerability", "attack", "firewall", "penetration test", "phishing",
-        "ransomware", "forensic", "ids", "hardening", "authentication",
-        "zero trust", "threat", "exploit",
-    ]),
-    ("Game Development", [
-        "video game", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
-        "fps", "platformer", "puzzle game", "game design", "godot",
-        "game engine", "game development", "game jam", "npc", "game mechanic",
-        "board game", "card game", "indie game", "game world",
-    ]),
-    ("VR & Immersive Tech", [
-        "virtual reality", "augmented reality", "mixed reality",
-        "hololens", "oculus", "immersive", "vr experience", "ar app", "metaverse",
-    ]),
-    ("Web & Mobile Development", [
-        "web application", "mobile app", "android app", "ios app",
-        "react", "angular", "vue", "website redesign", "rest api",
-        "responsive design", "full stack", "flutter", "swift",
-        "website", "web app", "web development", "front end", "backend",
-        "web portal", "web platform", "web site", "web service",
-    ]),
-    ("Data Science & Analytics", [
-        "data analysis", "data visualization", "big data", "analytics",
-        "data mining", "hadoop", "spark", "tableau", "power bi",
-        "statistical analysis", "dashboard", "etl", "data warehouse",
-    ]),
-    ("IoT & Cloud Computing", [
-        "iot", "internet of things", "cloud computing", "aws", "azure",
-        "raspberry pi", "arduino", "sensor", "embedded system",
-        "edge computing", "microcontroller", "docker", "kubernetes",
-    ]),
-    ("Healthcare & Bioinformatics", [
-        "healthcare", "health care", "medical", "clinical", "patient", "disease",
-        "diagnosis", "bioinformatics", "eeg", "brain", "mri", "cancer detection",
-        "telemedicine", "drug", "genomic", "protein", "biomedical",
-        "health monitoring", "medical imaging", "radiology", "pathology",
-    ]),
-    ("Robotics & Hardware", [
-        "robot", "drone", "autonomous", "navigation", "lidar", "slam",
-        "ros", "3d print", "circuit", "fpga", "hardware design",
-    ]),
-    ("Education Technology", [
-        "education", "learning platform", "tutoring", "e-learning",
-        "lms", "teaching tool", "student engagement", "gamification",
+        "cluster", "anomaly detection", "supervised", "unsupervised", "inference",
     ]),
 ]
 DEFAULT_DOMAIN = "General Computing"
