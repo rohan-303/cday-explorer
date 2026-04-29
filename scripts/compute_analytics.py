@@ -56,6 +56,18 @@ def tokenize(text: str) -> list[str]:
     return [w for w in words if w not in ALL_STOP and len(w) > 2]
 
 
+def project_key(p: dict) -> str:
+    """Stable per-project key for cross-file references."""
+    if p.get("project_key"):
+        return p["project_key"]
+    if p.get("detail_url"):
+        return f"url:{p['detail_url']}"
+    pid = p.get("id", "")
+    sem = p.get("semester", "")
+    title = (p.get("title", "") or "").strip().lower()
+    return f"legacy:{pid}|{sem}|{title}"
+
+
 def recompute_all(projects: list[dict] = None, output_path: Path = None):
     """Full recomputation of keywords, similarity, and analytics."""
     
@@ -84,6 +96,7 @@ def recompute_all(projects: list[dict] = None, output_path: Path = None):
         project_tokens.append(tokens)
     
     for i, p in enumerate(projects):
+        p["project_key"] = project_key(p)
         tokens = project_tokens[i]
         if not tokens:
             p["keywords"] = []
@@ -138,10 +151,20 @@ def recompute_all(projects: list[dict] = None, output_path: Path = None):
                 scores.append((j, sim))
         
         scores.sort(key=lambda x: -x[1])
-        p["similar"] = [
-            projects[j]["id"] + "|" + projects[j].get("semester", "")
-            for j, s in scores[:3]
-        ]
+        refs = []
+        seen_refs = set()
+        src_key = project_key(p)
+        for j, s in scores:
+            ref_key = project_key(projects[j])
+            if ref_key == src_key:
+                continue
+            if ref_key in seen_refs:
+                continue
+            seen_refs.add(ref_key)
+            refs.append(ref_key)
+            if len(refs) >= 3:
+                break
+        p["similar"] = refs
     
     sim_count = sum(1 for p in projects if p.get("similar"))
     print(f"    {sim_count} projects with related connections")

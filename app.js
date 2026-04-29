@@ -47,8 +47,17 @@ let searchQuery = '';
 let activeDomain = null;
 let currentSort = 'newest';
 let currentView = 'graph'; // 'graph' or 'analytics'
-let projectMap = {}; // id|semester -> project for quick lookups
+let projectMap = {}; // stable key -> project for quick lookups
 let entryAnimationDone = false;
+
+function getProjectKey(project) {
+  if (project.project_key) return project.project_key;
+  if (project.detail_url) return `url:${project.detail_url}`;
+  const id = project.id || '';
+  const sem = project.semester || '';
+  const title = (project.title || '').trim().toLowerCase();
+  return `legacy:${id}|${sem}|${title}`;
+}
 
 // ────────────────────────────────────────────────
 // Data Loading
@@ -59,7 +68,9 @@ async function loadData() {
 
   // Build lookup map for related projects
   allProjects.forEach(p => {
-    projectMap[`${p.id}|${p.semester}`] = p;
+    projectMap[getProjectKey(p)] = p;
+    // Backward compatibility for older similar refs
+    projectMap[`${p.id || ''}|${p.semester || ''}`] = p;
   });
 
   populateSemesterDropdown();
@@ -155,18 +166,29 @@ function populateSemesterDropdown() {
 // Filtered data helpers
 // ────────────────────────────────────────────────
 function getFiltered() {
-  return allProjects.filter(p => {
+  const qNorm = normalizeSearchText(searchQuery);
+  const base = allProjects.filter(p => {
     const matchSem = activeFilter === 'all' || p.semester === activeFilter;
-    const q = searchQuery.toLowerCase();
-    const matchSearch = !q ||
-      (p.title && p.title.toLowerCase().includes(q)) ||
-      (p.abstract && p.abstract.toLowerCase().includes(q)) ||
-      (p.authors && p.authors.toLowerCase().includes(q)) ||
-      (p.domain && p.domain.toLowerCase().includes(q)) ||
-      (p.department && p.department.toLowerCase().includes(q)) ||
-      (p.topics && p.topics.toLowerCase().includes(q));
-    return matchSem && matchSearch;
+    return matchSem;
   });
+
+  if (!qNorm) return base;
+
+  const tokens = qNorm.split(' ').filter(Boolean);
+  const scored = [];
+  for (const p of base) {
+    const score = computeSearchScore(p, qNorm, tokens);
+    if (score > 0) {
+      p._searchScore = score;
+      scored.push(p);
+    }
+  }
+
+  scored.sort((a, b) => {
+    if ((b._searchScore || 0) !== (a._searchScore || 0)) return (b._searchScore || 0) - (a._searchScore || 0);
+    return semesterIndex(b.semester) - semesterIndex(a.semester);
+  });
+  return scored;
 }
 
 function getDomainCounts(projects) {
@@ -420,8 +442,9 @@ function buildGraph(W, H) {
 
   visibleProjects.forEach(p => {
     const domainNode = nodes.find(n => n.id === `domain:${p.domain}`);
+    const projectKey = getProjectKey(p);
     nodes.push({
-      id: `proj:${p.id}:${p.semester}`,
+      id: `proj:${projectKey}`,
       type: 'project',
       project: p,
       domain: p.domain,
@@ -430,7 +453,7 @@ function buildGraph(W, H) {
       x: domainNode ? domainNode.x + (Math.random() - 0.5) * 60 : W/2,
       y: domainNode ? domainNode.y + (Math.random() - 0.5) * 60 : H/2,
     });
-    links.push({ source: `domain:${p.domain}`, target: `proj:${p.id}:${p.semester}`, type: 'domain-proj' });
+    links.push({ source: `domain:${p.domain}`, target: `proj:${projectKey}`, type: 'domain-proj' });
   });
 
   // Custom clustering force — pulls project nodes toward their domain center
@@ -825,7 +848,12 @@ function renderProjectList(domain) {
   }
 
   // Sort
-  if (currentSort === 'newest') {
+  if (searchQuery.trim()) {
+    projects.sort((a, b) => {
+      if ((b._searchScore || 0) !== (a._searchScore || 0)) return (b._searchScore || 0) - (a._searchScore || 0);
+      return semesterIndex(b.semester) - semesterIndex(a.semester);
+    });
+  } else if (currentSort === 'newest') {
     projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
   } else if (currentSort === 'oldest') {
     projects.sort((a, b) => semesterIndex(a.semester) - semesterIndex(b.semester));
@@ -1037,10 +1065,12 @@ function renderRelatedProjects(project) {
   }
 
   let count = 0;
+  const currentKey = getProjectKey(project);
   for (const ref of project.similar) {
     if (count >= 3) break;
     const related = projectMap[ref];
     if (!related) continue;
+    if (getProjectKey(related) === currentKey) continue;
 
     const color = DOMAIN_COLORS[related.domain] || '#FFC629';
     // Show full abstract in tooltip (CSS handles overflow with max-height + scroll)
@@ -1261,12 +1291,20 @@ function updateMobileProjectList(container, filtered, domainCounts, domains) {
       projects.sort((a, b) => {
         if (a.award && !b.award) return -1;
         if (!a.award && b.award) return 1;
+        if (searchQuery.trim() && (b._searchScore || 0) !== (a._searchScore || 0)) {
+          return (b._searchScore || 0) - (a._searchScore || 0);
+        }
         return semesterIndex(b.semester) - semesterIndex(a.semester);
       });
     } else if (mobileSortMode === 'oldest') {
       projects.sort((a, b) => semesterIndex(a.semester) - semesterIndex(b.semester));
     } else {
-      projects.sort((a, b) => semesterIndex(b.semester) - semesterIndex(a.semester));
+      projects.sort((a, b) => {
+        if (searchQuery.trim() && (b._searchScore || 0) !== (a._searchScore || 0)) {
+          return (b._searchScore || 0) - (a._searchScore || 0);
+        }
+        return semesterIndex(b.semester) - semesterIndex(a.semester);
+      });
     }
     if (projects.length === 0) return;
     const color = DOMAIN_COLORS[domain] || '#FFC629';
@@ -1530,6 +1568,149 @@ function escAttr(str) {
     .replace(/'/g, '&#39;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^\w\s-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokenizeSearch(value) {
+  return normalizeSearchText(value).split(' ').filter(Boolean);
+}
+
+function normalizeAuthorVariants(authorsRaw) {
+  const raw = String(authorsRaw || '');
+  const normalized = normalizeSearchText(raw);
+  if (!normalized) return { full: '', tokens: [], initials: [] };
+
+  const chunks = raw
+    .split(',')
+    .map(x => normalizeSearchText(x))
+    .filter(Boolean);
+
+  const tokens = tokenizeSearch(normalized);
+  const initials = [];
+
+  // Supports "Last, First Middle" pairs and simple single-name chunks.
+  for (let i = 0; i < chunks.length; i += 2) {
+    const maybeLast = chunks[i] || '';
+    const maybeFirst = chunks[i + 1] || '';
+    if (maybeFirst) {
+      const firstParts = tokenizeSearch(maybeFirst);
+      const firstInitial = firstParts[0] ? firstParts[0][0] : '';
+      const lastParts = tokenizeSearch(maybeLast);
+      const lastInitial = lastParts[0] ? lastParts[0][0] : '';
+      if (firstInitial && lastInitial) initials.push(`${firstInitial}${lastInitial}`);
+      if (firstInitial) initials.push(firstInitial);
+      if (lastInitial) initials.push(lastInitial);
+    } else {
+      const one = tokenizeSearch(maybeLast);
+      if (one[0]) initials.push(one[0][0]);
+    }
+  }
+
+  return { full: normalized, tokens, initials };
+}
+
+function levenshteinDistance(a, b) {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+  const dp = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) dp[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = dp[j];
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[j] = Math.min(
+        dp[j] + 1,
+        dp[j - 1] + 1,
+        prev + cost
+      );
+      prev = tmp;
+    }
+  }
+  return dp[b.length];
+}
+
+function fuzzyTokenMatch(token, fieldTokens) {
+  if (!token || token.length < 4) return false;
+  const maxDist = token.length <= 5 ? 1 : 2;
+  for (const ft of fieldTokens) {
+    if (Math.abs(ft.length - token.length) > maxDist) continue;
+    if (levenshteinDistance(token, ft) <= maxDist) return true;
+  }
+  return false;
+}
+
+function computeSearchScore(project, qNorm, tokens) {
+  const title = normalizeSearchText(project.title);
+  const domain = normalizeSearchText(project.domain);
+  const authorsData = normalizeAuthorVariants(project.authors);
+  const authors = authorsData.full;
+  const department = normalizeSearchText(project.department);
+  const topics = normalizeSearchText(project.topics);
+  const abstract = normalizeSearchText(project.abstract);
+  const all = `${title} ${domain} ${authors} ${department} ${topics} ${abstract}`;
+
+  if (!all) return 0;
+  let score = 0;
+  const titleTokens = tokenizeSearch(title);
+  const authorTokens = authorsData.tokens;
+  const topicTokens = tokenizeSearch(topics);
+  const abstractTokens = tokenizeSearch(abstract);
+  const domainTokens = tokenizeSearch(domain);
+
+  // Require all terms to match (exact/prefix/fuzzy) for multi-token precision.
+  for (const t of tokens) {
+    const exact = all.includes(t);
+    const prefix =
+      titleTokens.some(ft => ft.startsWith(t)) ||
+      authorTokens.some(ft => ft.startsWith(t)) ||
+      topicTokens.some(ft => ft.startsWith(t)) ||
+      domainTokens.some(ft => ft.startsWith(t));
+    const fuzzy =
+      fuzzyTokenMatch(t, titleTokens) ||
+      fuzzyTokenMatch(t, authorTokens);
+    const initialMatch = authorsData.initials.includes(t);
+    if (!(exact || prefix || fuzzy || initialMatch)) return 0;
+  }
+
+  if (title.includes(qNorm)) score += 120;
+  if (domain.includes(qNorm)) score += 40;
+  if (authors.includes(qNorm)) score += 35;
+  if (department.includes(qNorm)) score += 25;
+  if (topics.includes(qNorm)) score += 25;
+  if (abstract.includes(qNorm)) score += 10;
+
+  for (const t of tokens) {
+    if (title.includes(t)) score += 18;
+    if (domain.includes(t)) score += 12;
+    if (authors.includes(t)) score += 8;
+    if (topics.includes(t)) score += 7;
+    if (abstract.includes(t)) score += 2;
+    if (titleTokens.some(ft => ft.startsWith(t))) score += 10;
+    if (authorTokens.some(ft => ft.startsWith(t))) score += 8;
+    if (topicTokens.some(ft => ft.startsWith(t))) score += 5;
+    if (authorsData.initials.includes(t)) score += 18;
+    if (fuzzyTokenMatch(t, titleTokens)) score += 6;
+    if (fuzzyTokenMatch(t, authorTokens)) score += 5;
+  }
+
+  // Ambiguous one-letter searches should still surface likely hits, but with low confidence.
+  if (tokens.length === 1 && tokens[0].length === 1) {
+    const c = tokens[0];
+    if (titleTokens.some(ft => ft.startsWith(c))) score += 2;
+    if (authorTokens.some(ft => ft.startsWith(c))) score += 2;
+  }
+
+  return score;
 }
 
 // ────────────────────────────────────────────────

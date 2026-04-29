@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PROJECTS_FILE = ROOT / "projects.json"
 
 # ─── Configuration ───────────────────────────────────────────
-API_KEY = os.environ.get("OPENAI_API_KEY", "")
+API_KEY = os.environ.get("OPENAI_API_KEY", "    ")
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 BATCH_SIZE = 5  # projects per API call
@@ -49,8 +49,12 @@ def call_llm(projects: list[dict]) -> dict:
     
     # Build prompt
     sections = []
+    key_map = {}
     for i, p in enumerate(projects):
-        sections.append(f"""### PROJECT {i+1}: {p['id']}
+        key = f"P{i+1:03d}"
+        key_map[key] = p
+        sections.append(f"""### PROJECT {key}
+ID: {p.get('id', '')}
 Title: {p['title']}
 Domain: {p.get('domain', 'N/A')}
 Abstract: {p.get('abstract', 'No abstract')[:600]}""")
@@ -59,7 +63,7 @@ Abstract: {p.get('abstract', 'No abstract')[:600]}""")
 
 {chr(10).join(sections)}
 
-Return a JSON object where keys are project IDs and values are arrays of 4 suggestions.
+Return a JSON object where keys are the PROJECT keys above (e.g., P001, P002) and values are arrays of 4 suggestions.
 Each suggestion: {{"icon": "CATEGORY", "title": "specific title", "desc": "2-3 sentences"}}
 icon must be one of: TECHNICAL, RESEARCH, USE CASE, OPPORTUNITY
 """
@@ -89,7 +93,7 @@ icon must be one of: TECHNICAL, RESEARCH, USE CASE, OPPORTUNITY
     text = re.sub(r'^```(?:json)?\s*\n?', '', text)
     text = re.sub(r'\n?\s*```\s*$', '', text)
     
-    return json.loads(text)
+    return json.loads(text), key_map
 
 
 def generate_suggestions_for_projects(projects: list[dict]):
@@ -106,9 +110,9 @@ def generate_suggestions_for_projects(projects: list[dict]):
         print(f"  [{i+1}-{min(i+BATCH_SIZE, total)}/{total}] Generating...", end="", flush=True)
         
         try:
-            result = call_llm(batch)
-            for p in batch:
-                suggestions = result.get(p["id"], [])
+            result, key_map = call_llm(batch)
+            for key, p in key_map.items():
+                suggestions = result.get(key, [])
                 if suggestions:
                     p["suggestions"] = suggestions[:4]
                     generated += 1

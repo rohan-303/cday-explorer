@@ -156,7 +156,7 @@ def discover_project_urls(semester: str) -> list[str]:
     category_sets = [
         # Pattern used since Fall 2024
         ["Undergraduate_Project", "Graduate_Project", "Undergraduate_Research",
-         "Masters_Research", "PhD_Research"],
+         "Masters_Research", "PhD_Research", "Exploratory_Projects"],
         # Pattern used Spring 2022 - Spring 2024
         ["Undergraduate_Capstone", "Graduate_Capstone", "Undergraduate_Research",
          "Graduate_Research", "Masters_Research", "PhD_Research"],
@@ -169,7 +169,7 @@ def discover_project_urls(semester: str) -> list[str]:
         # Game/Internship (Summer 2020)
         ["internship", "machine_learning"],
         # Extras that appear in some semesters
-        ["Game_Design"],
+        ["Game_Design", "Exploratory_Projects", "Exploratory_Project", "exploratory_projects"],
     ]
     
     all_urls = []
@@ -299,6 +299,8 @@ def fetch_project(url: str) -> dict:
         "graduateresearch": "Graduate Research",
         "masters_research": "Graduate Research",
         "phd_research": "PhD Research",
+        "exploratory_projects": "Exploratory Project",
+        "exploratory_project": "Exploratory Project",
         "game_design": "Game Design",
         "internship": "Internship",
     }

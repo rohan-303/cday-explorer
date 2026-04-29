@@ -2,7 +2,7 @@
 
 **An interactive visualization of a decade of computing innovation at Kennesaw State University.**
 
-Explore 1,373 capstone projects, research papers, and games from 22 semesters of the KSU College of Computing and Software Engineering (CCSE) Computing Showcase (C-Day), spanning Spring 2016 through Spring 2026.
+Explore 1,375 capstone projects, research papers, and games from 22 semesters of the KSU College of Computing and Software Engineering (CCSE) Computing Showcase (C-Day), spanning Spring 2016 through Spring 2026.
 
 🔗 **[Live Site](https://rohan-303.github.io/cday-explorer/)**
 
@@ -10,12 +10,13 @@ Explore 1,373 capstone projects, research papers, and games from 22 semesters of
 
 ## Features
 
-- **Force-Directed Graph** — D3.js visualization with 11 domain clusters and 1,373 project nodes. Click a domain to browse its projects, drag to rearrange, scroll to zoom.
+- **Force-Directed Graph** — D3.js visualization with 11 domain clusters and 1,375 project nodes. Click a domain to browse its projects, drag to rearrange, scroll to zoom.
 - **Analytics Dashboard** — Toggle to view domain trends over time, award winner distribution, and domain keyword clouds powered by Chart.js.
 - **Project Detail Modals** — Full abstract, author/advisor info, links to Digital Commons pages, poster PDFs, and YouTube presentation videos.
 - **Take It Further** — AI-generated, project-specific suggestions for other students to extend each project. Four categories: Technical, Research, Use Case, and Opportunity.
 - **Related Projects** — NLP-based similarity matching connects projects across semesters using TF-IDF keyword analysis.
 - **Mobile Responsive** — Collapsible domain list view on screens below 768px with full-screen modals and touch-friendly targets.
+- **Smart Search** — Weighted, typo-tolerant search across titles, authors, domains, departments, topics, and abstracts with improved ranking on desktop and mobile.
 - **About/Methodology** — Transparent documentation of the data pipeline and engineering process.
 
 ---
@@ -49,7 +50,7 @@ Explore 1,373 capstone projects, research papers, and games from 22 semesters of
 
 | Field | Coverage |
 |-------|----------|
-| Abstracts | 98% (1,342 / 1,373) |
+| Abstracts | 98% (1,342 / 1,375) |
 | Take It Further suggestions | 100% |
 | Authors | 100% |
 | Domain classification | 100% |
