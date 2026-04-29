@@ -36,21 +36,29 @@ DC_BASE = "https://digitalcommons.kennesaw.edu"
 CDAY_BASE = "https://campus.kennesaw.edu/colleges-departments/ccse/events/computing-showcase"
 
 # ─── Domain Classification Keywords ─────────────────────────
+import re
+
 DOMAIN_RULES = [
     ("VR & Immersive Tech", [
         "virtual reality", "augmented reality", "mixed reality",
         "hololens", "oculus", "immersive", "vr experience", "ar app", "metaverse",
         "quest 2", "quest 3", "htc vive", "extended reality", "xr", "haptic",
         "stereoscopic", "3d environment", "unity vr", "headset", "ar experience",
+        "360-degree", "spatial computing", "virtual environment", "simulated reality",
     ]),
     ("Game Development", [
-        "video game", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
+        "video game", "game", "gaming", "unity", "unreal engine", "gameplay", "rpg", "multiplayer",
         "fps", "platformer", "puzzle game", "game design", "godot",
         "game engine", "game development", "game jam", "npc", "game mechanic",
         "board game", "card game", "indie game", "game world", "combat",
         "playthrough", "enemies", "character", "controller", "interactive entertainment",
         "puzzle", "entity", "simulator", "racing game", "story-driven", "plugin",
         "mod", "minecraft", "speedrun", "esports", "esport",
+        "sci-fi themed", "action-adventure", "thief", "raid", "first-person", "shooter",
+        "third-person", "stealth", "quest", "level design", "texture", "sprite",
+        "game assets", "roguelike", "tower defense", "sandbox", "open world", "visual novel",
+        "indie", "unreal", "gamified", "metroidvania", "dungeon", "boss fight",
+        "game project", "player experience", "level editor", "game logic",
     ]),
     ("Cybersecurity", [
         "security", "cyber", "malware", "intrusion detection", "encryption",
@@ -58,29 +66,42 @@ DOMAIN_RULES = [
         "ransomware", "forensic", "ids", "hardening", "authentication",
         "zero trust", "threat", "exploit", "cryptography", "blockchain",
         "network security", "privacy", "packet", "botnet", "incident response",
+        "adversarial", "threat defense", "network protection", "privacy-preserving",
+        "zero-knowledge", "steganography", "spoofing", "overflow", "sql injection",
+        "cyber-attack", "denial of service", "ddos", "security audit", "breach",
     ]),
     ("Healthcare & Bioinformatics", [
         "healthcare", "health care", "medical", "clinical", "patient", "disease",
         "diagnosis", "bioinformatics", "eeg", "brain", "mri", "cancer detection",
         "telemedicine", "drug", "genomic", "protein", "biomedical",
         "health monitoring", "medical imaging", "radiology", "pathology",
-        "hipaa", "clinic", "hospital", "doctor", "health",
+        "hipaa", "clinic", "hospital", "doctor", "health", "caregiver",
+        "alzheimer", "dementia", "coronary", "artery", "cardiac", "patient care",
+        "burnout", "mental health", "therapy", "rehabilitation", "stroke", "diabetic",
+        "diabetes", "blood flow", "imaging", "x-ray", "ct scan", "ultrasound",
+        "bio", "plant disease", "rice plant", "agriculture", "crop", "farming",
+        "biological", "pharmacology", "genetics", "medical record", "health record",
     ]),
     ("Robotics & Hardware", [
         "robot", "drone", "autonomous", "navigation", "lidar", "slam",
         "ros", "3d print", "circuit", "fpga", "hardware design",
         "microprocessor", "pcb", "mechatronics", "hardware",
+        "micromouse", "computer design", "digital logic", "8-bit", "multisim",
+        "circuitry", "assembly language", "vhdl", "verilog", "architecture",
+        "instruction set", "cpu design", "hardware implementation", "fpga design",
     ]),
     ("IoT & Cloud Computing", [
         "iot", "internet of things", "cloud computing", "aws", "azure",
         "raspberry pi", "arduino", "sensor", "embedded system",
         "edge computing", "microcontroller", "docker", "kubernetes",
         "serverless", "distributed system", "mqtt", "node-red", "cloud",
+        "telemetry", "smart home", "connected device", "network protocol",
     ]),
     ("Education Technology", [
         "education", "learning platform", "tutoring", "e-learning",
         "lms", "teaching tool", "student engagement", "gamification",
         "classroom", "academic", "student success", "pedagogy", "educational",
+        "learning management", "canvas api", "grading", "teacher", "syllabus",
     ]),
     ("Web & Mobile Development", [
         "web application", "mobile app", "android app", "ios app",
@@ -90,6 +111,7 @@ DOMAIN_RULES = [
         "web portal", "web platform", "web site", "web service", "ui/ux",
         "user interface", "user experience", "progressive web app", "pwa",
         "bot", "discord", "marketplace", "ecommerce", "e-commerce", "application",
+        "crm", "customer relationship", "cms", "content management",
     ]),
     ("Data Science & Analytics", [
         "data analysis", "data visualization", "big data", "analytics",
@@ -97,16 +119,15 @@ DOMAIN_RULES = [
         "statistical analysis", "dashboard", "etl", "data warehouse",
         "data science", "data set", "regression", "correlation", "pandas",
         "numpy", "matplotlib", "seaborn", "business intelligence",
+        "predictive model", "forecasting", "trend analysis", "data processing",
     ]),
     ("AI & Machine Learning", [
-        "machine learning", "deep learning", "neural network", "artificial intelligence",
-        "nlp", "natural language", "computer vision", "classification", "prediction model",
-        "tensorflow", "pytorch", "cnn", "rnn", "lstm", "transformer", "gpt",
-        "sentiment analysis", "reinforcement learning", "object detection",
-        "image recognition", "chatbot", "llm", "generative ai", "diffusion",
-        "random forest", "decision tree", "regression model", "predict",
-        "forecasting", "neural", "training model", "accuracy", "f1 score",
-        "cluster", "anomaly detection", "supervised", "unsupervised", "inference",
+        "machine learning", "artificial intelligence", "deep learning",
+        "neural network", "cnn", "rnn", "lstm", "nlp", "computer vision",
+        "image classification", "object detection", "natural language",
+        "generative ai", "llm", "gpt", "transformer", "reinforcement learning",
+        "ai model", "tensor flow", "pytorch", "keras", "predictive", "ai",
+        "large language model", "diffusion model", "openai", "stable diffusion",
     ]),
 ]
 DEFAULT_DOMAIN = "General Computing"
@@ -114,14 +135,15 @@ DEFAULT_DOMAIN = "General Computing"
 
 def classify_domain(title: str, abstract: str) -> str:
     text = (title + " " + abstract).lower()
-    scores = {}
+    # Priority-based matching with word boundaries
     for domain, keywords in DOMAIN_RULES:
-        score = sum(1 for kw in keywords if kw in text)
-        if score > 0:
-            scores[domain] = score
-    if not scores:
-        return DEFAULT_DOMAIN
-    return max(scores, key=scores.get)
+        for kw in keywords:
+            # Use regex to find whole words only
+            # Escape kw to handle special chars, and use \b for boundaries
+            pattern = r'\b' + re.escape(kw) + r'\b'
+            if re.search(pattern, text):
+                return domain
+    return DEFAULT_DOMAIN
 
 
 def semester_to_winner_prefix(semester: str) -> str:
