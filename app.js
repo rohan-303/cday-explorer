@@ -506,9 +506,9 @@ function buildGraph(W, H) {
       })
       .strength(0.6)
     )
-    .force('center', d3.forceCenter(W/2, H/2).strength(0.05))
+    .force('center', d3.forceCenter(W/2, H/2).strength(0.12))
     .force('cluster', clusterForce)
-    .alphaDecay(0.025);
+    .alphaDecay(0.022);
 
   // Draw links
   const linkSel = g.selectAll('.link-line')
@@ -602,6 +602,11 @@ function buildGraph(W, H) {
       d3.select(this).select('circle.outer').attr('r', 30 + Math.sqrt(d.count) * 3 + 12);
       d3.select(this).select('circle:nth-child(2)').attr('fill-opacity', 0.35).attr('r', 20 + Math.sqrt(d.count) * 2 + 12);
       
+      // Update side panel if it's already open, or just trigger the logic
+      if (document.getElementById('sidePanel').classList.contains('open')) {
+        renderProjectList(d.domain);
+      }
+
       // Add a ripple ring
       d3.select(this).append('circle')
         .attr('class', 'ripple-ring')
@@ -612,6 +617,9 @@ function buildGraph(W, H) {
     .on('mouseleave', function(event, d) {
       d3.select(this).select('circle.outer').attr('r', 30 + Math.sqrt(d.count) * 3);
       d3.select(this).select('circle:nth-child(2)').attr('fill-opacity', 0.12).attr('r', 20 + Math.sqrt(d.count) * 2);
+      
+      // If we left a domain, but the panel is open, should we revert to previous?
+      // Probably not, keep the last hovered/clicked one.
     });
 
   // Draw project nodes

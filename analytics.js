@@ -209,21 +209,55 @@ function buildWinnerChart(data) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: 'rgba(28,28,28,0.95)',
-          borderColor: 'rgba(255,198,41,0.12)',
+          backgroundColor: 'rgba(28,28,28,0.98)',
+          borderColor: 'rgba(255,198,41,0.2)',
           borderWidth: 1,
           titleColor: '#e0e0e0',
-          bodyColor: '#FFC629',
-          titleFont: { family: 'Montserrat', weight: '600', size: 13 },
+          bodyColor: '#9a9faa',
+          titleFont: { family: 'Montserrat', weight: '600', size: 14 },
           bodyFont: { family: 'Montserrat', size: 12 },
-          padding: 12,
-          cornerRadius: 8,
+          padding: 15,
+          cornerRadius: 10,
+          displayColors: false,
           callbacks: {
             title: function(items) {
               return semesters[items[0].dataIndex];
             },
             label: function(context) {
-              return `${context.parsed.y} winners`;
+              const sem = semesters[context.dataIndex];
+              const winners = allProjects.filter(p => p.semester === sem && p.award);
+              
+              if (winners.length === 0) return 'No winners recorded';
+              
+              const lines = [];
+              const places = { '1st': [], '2nd': [], '3rd': [], 'Other': [] };
+              
+              winners.forEach(p => {
+                const award = p.award.toLowerCase();
+                if (award.includes('1st') || award.includes('first')) places['1st'].push(p.title);
+                else if (award.includes('2nd') || award.includes('second')) places['2nd'].push(p.title);
+                else if (award.includes('3rd') || award.includes('third')) places['3rd'].push(p.title);
+                else places['Other'].push(p.title);
+              });
+
+              if (places['1st'].length) {
+                lines.push('🥇 1st Place:');
+                places['1st'].forEach(t => lines.push(`   • ${t.length > 40 ? t.substring(0, 37) + '...' : t}`));
+              }
+              if (places['2nd'].length) {
+                lines.push('🥈 2nd Place:');
+                places['2nd'].forEach(t => lines.push(`   • ${t.length > 40 ? t.substring(0, 37) + '...' : t}`));
+              }
+              if (places['3rd'].length) {
+                lines.push('🥉 3rd Place:');
+                places['3rd'].forEach(t => lines.push(`   • ${t.length > 40 ? t.substring(0, 37) + '...' : t}`));
+              }
+              if (places['Other'].length && lines.length < 10) {
+                lines.push('🏅 Other Awards:');
+                places['Other'].slice(0, 3).forEach(t => lines.push(`   • ${t.length > 40 ? t.substring(0, 37) + '...' : t}`));
+              }
+
+              return lines;
             }
           }
         },

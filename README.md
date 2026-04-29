@@ -229,5 +229,6 @@ Styled with [Kennesaw State University's official brand identity](https://campus
 ## Author
 
 **Rohan Jonnalagadda**  
+**Sanketh Chapaneri** 
 MS Computer Science — Kennesaw State University  
 College of Computing and Software Engineering
