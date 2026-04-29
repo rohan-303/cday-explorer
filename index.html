@@ -35,7 +35,7 @@
       </svg>
     </div>
     <div class="loading-text">C-Day Explorer</div>
-    <div class="loading-subtext">Loading 1,286 projects…</div>
+    <div class="loading-subtext" id="loadingSubtext">Loading projects…</div>
   </div>
 
   <!-- Particle Canvas Background -->
@@ -58,7 +58,7 @@
         </svg>
         <div>
           <span class="logo-text">C-Day Explorer</span>
-          <span class="logo-sub">KSU CCSE · 2016–2025</span>
+          <span class="logo-sub" id="logoSub">KSU CCSE</span>
         </div>
       </div>
       <div class="header-controls">
@@ -76,7 +76,7 @@
           <svg class="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
             <circle cx="8.5" cy="8.5" r="5.5"/><path d="m13.5 13.5 3 3"/>
           </svg>
-          <input type="text" id="searchInput" placeholder="Search 1,280+ projects…" autocomplete="off" />
+          <input type="text" id="searchInput" placeholder="Search projects…" autocomplete="off" />
         </div>
         <select id="semesterSelect" class="semester-select">
           <option value="all">All Semesters</option>
@@ -118,19 +118,19 @@
       <!-- Hero Stats -->
       <div class="analytics-hero">
         <div class="hero-stat">
-          <span class="hero-stat-num" data-target="1286">0</span>
+          <span class="hero-stat-num" data-target="0" data-stat="projects">0</span>
           <span class="hero-stat-label">Projects</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-num" data-target="21">0</span>
+          <span class="hero-stat-num" data-target="0" data-stat="semesters">0</span>
           <span class="hero-stat-label">Semesters</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-num" data-target="223">0</span>
+          <span class="hero-stat-num" data-target="0" data-stat="winners">0</span>
           <span class="hero-stat-label">Award Winners</span>
         </div>
         <div class="hero-stat">
-          <span class="hero-stat-num" data-target="11">0</span>
+          <span class="hero-stat-num" data-target="0" data-stat="domains">0</span>
           <span class="hero-stat-label">Domains</span>
         </div>
       </div>
@@ -138,7 +138,7 @@
       <!-- Domain Trends Chart -->
       <div class="analytics-section">
         <h3 class="analytics-section-title">Domain Trends Over Time</h3>
-        <p class="analytics-section-sub">How computing focus areas have shifted across 21 semesters</p>
+        <p class="analytics-section-sub" id="trendSub">How computing focus areas have shifted across semesters</p>
         <div class="chart-container" id="trendChartContainer">
           <canvas id="trendChart"></canvas>
         </div>
@@ -240,16 +240,16 @@
         <h2 class="about-title">C-Day Explorer</h2>
         <p class="about-tagline">10 Years of KSU Computing Innovation</p>
       </div>
-      <p class="about-desc">An interactive visualization of a decade of capstone projects, research, and innovation from Kennesaw State University's College of Computing and Software Engineering. Explore 1,286 projects across 11 domains spanning 21 semesters of C-Day showcases.</p>
+      <p class="about-desc" id="aboutDesc">An interactive visualization of a decade of capstone projects, research, and innovation from Kennesaw State University's College of Computing and Software Engineering. Explore 1,375 projects across 11 domains spanning 21 semesters of C-Day showcases.</p>
       <div class="about-section">
         <h4>Methodology</h4>
         <ul class="about-stats-list">
-          <li>Data collected from 21 semesters of C-Day archives (2016–2025)</li>
+          <li id="aboutCoverageItem">Data collected from 21 semesters of C-Day archives (2016–2026)</li>
           <li>Abstracts extracted from Digital Commons and archive PDFs</li>
-          <li>631 poster PDF links and 345 YouTube presentation videos matched</li>
+          <li>718 poster PDF links and 345 YouTube presentation videos matched</li>
           <li>223 award winners identified from event pages and program archives</li>
-          <li>AI-powered "Take It Further" suggestions generated for every project</li>
-          <li>NLP-based keyword extraction and project similarity analysis</li>
+          <li>Domain classification powered by an automated keyword priority engine</li>
+          <li>AI-generated project extensions and NLP similarity matching</li>
         </ul>
       </div>
       <div class="about-section">

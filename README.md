@@ -2,7 +2,7 @@
 
 **An interactive visualization of a decade of computing innovation at Kennesaw State University.**
 
-Explore 1,286 capstone projects, research papers, and games from 21 semesters of the KSU College of Computing and Software Engineering (CCSE) Computing Showcase (C-Day), spanning Spring 2016 through Fall 2025.
+Explore 1,375 capstone projects, research papers, and games from 22 semesters of the KSU College of Computing and Software Engineering (CCSE) Computing Showcase (C-Day), spanning Spring 2016 through Spring 2026.
 
 🔗 **[Live Site](https://rohan-303.github.io/cday-explorer/)**
 
@@ -10,12 +10,13 @@ Explore 1,286 capstone projects, research papers, and games from 21 semesters of
 
 ## Features
 
-- **Force-Directed Graph** — D3.js visualization with 11 domain clusters and 1,286 project nodes. Click a domain to browse its projects, drag to rearrange, scroll to zoom.
+- **Force-Directed Graph** — D3.js visualization with 11 domain clusters and 1,375 project nodes. Click a domain to browse its projects, drag to rearrange, scroll to zoom.
 - **Analytics Dashboard** — Toggle to view domain trends over time, award winner distribution, and domain keyword clouds powered by Chart.js.
 - **Project Detail Modals** — Full abstract, author/advisor info, links to Digital Commons pages, poster PDFs, and YouTube presentation videos.
 - **Take It Further** — AI-generated, project-specific suggestions for other students to extend each project. Four categories: Technical, Research, Use Case, and Opportunity.
 - **Related Projects** — NLP-based similarity matching connects projects across semesters using TF-IDF keyword analysis.
 - **Mobile Responsive** — Collapsible domain list view on screens below 768px with full-screen modals and touch-friendly targets.
+- **Smart Search** — Weighted, typo-tolerant search across titles, authors, domains, departments, topics, and abstracts with improved ranking on desktop and mobile.
 - **About/Methodology** — Transparent documentation of the data pipeline and engineering process.
 
 ---
@@ -24,12 +25,12 @@ Explore 1,286 capstone projects, research papers, and games from 21 semesters of
 
 | Source | Coverage | Projects | Method |
 |--------|----------|----------|--------|
-| [KSU Digital Commons](https://digitalcommons.kennesaw.edu/ccse_computing_showcase/) | Fall 2019 – Fall 2025 | ~600 | Fetched metadata, abstracts, and poster PDF URLs from individual project pages |
+| [KSU Digital Commons](https://digitalcommons.kennesaw.edu/ccse_computing_showcase/) | Fall 2019 – Spring 2026 | ~687 | Fetched metadata, abstracts, and poster PDF URLs from individual project pages |
 | C-Day Archive PDFs | Spring 2016 – Fall 2020 | ~686 | Parsed program PDFs from [KSU C-Day Events page](https://campus.kennesaw.edu/colleges-departments/ccse/events/computing-showcase/index.php) |
 | YouTube [@KSUCCSE](https://www.youtube.com/@KSUCCSE) | 27 playlists | 345 videos | Matched presentation videos to projects by title + semester from channel playlists |
 | C-Day Winner Pages | Spring 2017 – Fall 2025 | 223 winners | Extracted from semester-specific winner PHP pages and PDF certificate pages |
 
-### Semester Coverage (21 semesters)
+### Semester Coverage (22 semesters)
 
 | Period | Semesters | Notes |
 |--------|-----------|-------|
@@ -43,18 +44,19 @@ Explore 1,286 capstone projects, research papers, and games from 21 semesters of
 | 2023 | Spring 2023, Fall 2023 | Digital Commons + winner pages |
 | 2024 | Spring 2024, Fall 2024 | Digital Commons + winner pages |
 | 2025 | Spring 2025, Fall 2025 | Digital Commons + winner pages |
+| 2026 | Spring 2026 | Digital Commons primary |
 
 ### Data Completeness
 
 | Field | Coverage |
 |-------|----------|
-| Abstracts | 97% (1,250 / 1,286) |
+| Abstracts | 98% (1,342 / 1,375) |
 | Take It Further suggestions | 100% |
 | Authors | 100% |
 | Domain classification | 100% |
-| Poster PDF URLs | 49% (631) |
+| Poster PDF URLs | 52% (718) |
 | YouTube video URLs | 26% (345) |
-| Digital Commons detail URLs | 46% (600) |
+| Digital Commons detail URLs | 50% (687) |
 | Award winners | 223 across all semesters |
 
 ---
@@ -92,7 +94,7 @@ Every project has 4 AI-generated suggestions designed for **other students** to 
    - Varied across four angles: Technical improvement, Research extension, New use case, and Commercial/career opportunity
    - Ambitious but achievable for a motivated CS student in one semester
 3. **Output**: 4 suggestions per project, each with a category label, specific title, and 2-3 sentence description.
-4. **Processing**: 1,286 projects processed in batches of 10, with 291 re-generated after abstract improvements.
+4. **Processing**: 1,373 projects processed in batches of 10, with targeted re-generation after abstract improvements.
 
 ### Category Labels
 
@@ -227,5 +229,6 @@ Styled with [Kennesaw State University's official brand identity](https://campus
 ## Author
 
 **Rohan Jonnalagadda**  
+**Sanketh Chapaneri** 
 MS Computer Science — Kennesaw State University  
 College of Computing and Software Engineering

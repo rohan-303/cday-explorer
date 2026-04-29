@@ -1206,7 +1206,9 @@ body {
    ABOUT MODAL
    =========================================== */
 .about-modal {
-  max-width: 560px;
+  max-width: 640px;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 .about-header {
   text-align: center;
